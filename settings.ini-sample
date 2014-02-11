@@ -1,0 +1,12 @@
+[api]
+keyID = 11111111
+vCode = xxxxxxxxxxxx
+
+[general]
+apiURL = https://api.eveonline.com
+debug = True
+interface = 127.0.0.1
+
+[users]
+user = someuser
+password = somepassword
