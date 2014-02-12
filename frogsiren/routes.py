@@ -1,5 +1,5 @@
 from frogsiren import app
-import ConfigParser
+from ConfigParser import ConfigParser
 
 def ConfigSectionMap(section):
     dict1 = {}
