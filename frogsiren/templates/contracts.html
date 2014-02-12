@@ -1,0 +1,72 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" 
+    "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+<title>untitled</title>
+<style type="text/css">
+
+#abc {
+	position: absolute;
+	z-index: 99;
+	left: 120px;
+	top: 60px;
+}
+
+tr.Completed {
+    display: none;
+}
+
+tr.Deleted {
+    display: none;
+}
+tr {
+	background: skyblue;
+}
+td {
+	font-size: smaller;
+	padding: 2px;
+	border: 3px #000 double;
+}
+a:link, a:visited, a:hover, a:active {
+	position: absolute;
+	left: 10px;
+	top: 70px;
+	font: normal 11px verdana;
+	color: darkred;
+	text-decoration: none;
+}
+a:hover {
+	padding-left: 3px;
+}
+
+</style>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js">
+</script>
+</head>
+<body>
+<table id="abc">
+<thead><th>From</th><th>To</th><th style="width:100;">Type</th><th>Submitted</th><th style="width: 75;">Status</th><th style="width: 75;">Price</th><th style="width: 100;">Reward</th><th style="width: 100;">Collateral</th><th style="width:75;">Volume</th></thead>
+<tbody>
+{{ data }}
+</tbody>
+<input type="button" id="button1" value="Toggle Completed" />
+<input type="button" id="button2" value="Toggle Deleted" />
+
+</table>
+    <script>
+$('#button1').click(function() {
+    // all trs with level-1 class inside abc table
+    $('#abc tr.Completed').toggle();
+});
+
+$('#button2').click(function() {
+    // all trs with level-1 class inside abc table
+    $('#abc tr.Deleted').toggle();
+});
+</script>
+
+
+
+</body>
+</html>
