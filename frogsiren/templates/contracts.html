@@ -23,17 +23,6 @@ td {
 	padding: 2px;
 	border: 3px #000 double;
 }
-a:link, a:visited, a:hover, a:active {
-	position: absolute;
-	left: 10px;
-	top: 70px;
-	font: normal 11px verdana;
-	color: darkred;
-	text-decoration: none;
-}
-a:hover {
-	padding-left: 3px;
-}
 
 </style>
 <script src="/static/js/jquery-latest.js"></script>
@@ -48,7 +37,7 @@ $(document).ready(function()
 </head>
 <body>
 <table id="abc" class="tablesorter">
-<thead><th>From</th><th>To</th><th style="width:100;">Type</th><th>Submitted</th><th style="width: 75;">Status</th><th style="width: 75;">Price</th><th style="width: 100;">Reward</th><th style="width: 100;">Collateral</th><th style="width:75;">Volume</th><th>ISK/m3</th></thead>
+<thead><th>ID</th><th style="width:50;">From</th><th style="width:50;">To</th><th style="width:100;">Type</th><th>Submitted</th><th style="width: 75;">Status</th><th style="width: 100;">Reward</th><th style="width: 100;">Collateral</th><th style="width:75;">Volume</th><th>ISK/m3</th></thead>
 <tbody>
 {{ data }}
 </tbody>

@@ -2,7 +2,6 @@ from frogsiren import app
 import urllib2
 import xml.etree.ElementTree as ET
 import os
-import math
 import humanize
 from models import db, Stations, Contract
 
@@ -77,6 +76,7 @@ def read_contracts():
     for time in contract_root.findall('.'):
         cached_time = time.find('cachedUntil').text
     for child in contract_root.findall('./result/rowset/*'):
+        contractID = child.get("contractID")
         source_station_id = child.get("startStationID")
 
 
@@ -101,13 +101,16 @@ def read_contracts():
             active_collateral += collateral
             active_reward += reward
             active_volume += volume
+        start_station = Stations.query.filter_by(stationID=source_station_id).first()
+        #TODO Add check on if price is set, volume is higher then max, isk/m3 lower then min, high collateral, not in correct station
+        end_station = Stations.query.filter_by(stationID=end_station_id).first()
         content += '<tr class="' + status + '">\n'
-        content += '    <td>' + source_station_id + '</td>\n'
-        content += '    <td>' + end_station_id + '</td>\n'
+        content += '    <td><a href="#" onclick="CCPEVE.showContract(' + str(start_station.systemID) + ',' + contractID + ')">' + contractID + '</a></td>\n'
+        content += '    <td>' + start_station.stationName.split(' ')[0] + '</td>\n'
+        content += '    <td>' + end_station.stationName.split(' ')[0] + '</td>\n'
         content += '    <td>' + type + '</td>\n'
         content += '    <td>' + date_issued + '</td>\n'
         content += '    <td>' + status + '</td>\n'
-        content += '    <td>' + str(price) + '</td>\n'
         content += '    <td>' + str(reward) + '</td>\n'
         content += '    <td>' + str(collateral) + '</td>\n'
         content += '    <td>' + str(volume) + '</td>\n'
