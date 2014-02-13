@@ -4,13 +4,10 @@ from flask.ext.sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
 
 class Stations(db.Model):
-    __tablename__ = 'stations'
     stationID = db.Column(db.Integer, unique=True, primary_key=True)
     stationName = db.Column(db.Text, unique=False)
 
-
 class Contract(db.Model):
-    __tablename__ = 'contracts'
     contractID = db.Column(db.BigInteger, unique=True, primary_key=True)
     issuerID = db.Column(db.BigInteger, unique=False)
     issuerCorpID = db.Column(db.BigInteger, unique=False)
@@ -33,4 +30,22 @@ class Contract(db.Model):
     collateral = db.Column(db.Float, unique=False)
     buyout = db.Column(db.Float, unique=False)
     volume = db.Column(db.Float, unique=False)
+
+
+if __name__ == "__main__":
+    from flask import Flask
+    app = Flask(__name__)
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///cache.db'
+    db.init_app(app)
+    with app.test_request_context():
+        db.drop_all(app=app)
+        db.create_all(app=app)
+        station = Stations(stationID=60003478, stationName="Zinkon VII - Moon 1 - Caldari Business Tribunal Accounting")
+        db.session.add(station)
+        station = Stations(stationID=60003760, stationName="Jita IV - Moon 4 - Caldari Navy Assembly Plant")
+        db.session.add(station)
+        station = Stations(stationID=60013159, stationName="Sakht VI - Moon 7 - Genolution Biotech Production")
+        db.session.add(station)
+        db.session.commit()
+    exit(0)
 

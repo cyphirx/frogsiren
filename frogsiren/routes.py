@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 import os
 import math
 import humanize
-from models import db
+from models import db, Stations, Contract
 
 from flask import render_template, Markup
 from ConfigParser import ConfigParser
@@ -53,7 +53,6 @@ else:
     # stopgap until we can get connected to Auth
     user = os.environ['app_admin_user']
     password = os.environ['app_admin_password']
-
 
 
 def read_contracts():
