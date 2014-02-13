@@ -4,6 +4,7 @@ import xml.etree.ElementTree as ET
 import os
 import math
 import humanize
+from models import db
 
 from flask import render_template, Markup
 from ConfigParser import ConfigParser
@@ -24,18 +25,20 @@ def ConfigSectionMap(section):
 
 Config = ConfigParser()
 Config.read("settings.ini")
+cached_time = ""
+
 
 if os.path.isfile('settings.ini'):
     keyID = ConfigSectionMap("api")['keyid']
     vCode = ConfigSectionMap("api")['vcode']
 
     apiURL = ConfigSectionMap("general")['apiurl']
-    debug =  ConfigSectionMap("general")['debug']
-    interface =  ConfigSectionMap("general")['interface']
+    debug = ConfigSectionMap("general")['debug']
+    interface = ConfigSectionMap("general")['interface']
     port = int(os.environ.get("PORT", 5000))
 
     # stopgap until we can get connected to Auth
-    user =  ConfigSectionMap("users")['user']
+    user = ConfigSectionMap("users")['user']
     password = ConfigSectionMap("users")['password']
 
 else:
@@ -54,6 +57,13 @@ else:
 
 
 def read_contracts():
+    global cached_time
+    total_volume = 0
+    total_collateral = 0
+    total_reward = 0
+    active_volume = 0
+    active_collateral = 0
+    active_reward = 0
     url = apiURL + "/corp/Contracts.xml.aspx?keyID=" + keyID + "&vCode=" + vCode
     request_api = urllib2.Request(url, headers={"Accept": "application/xml"})
     try:
@@ -65,7 +75,8 @@ def read_contracts():
     contract_tree = ET.parse(f)
     contract_root = contract_tree.getroot()
     content = ""
-
+    for time in contract_root.findall('.'):
+        cached_time = time.find('cachedUntil').text
     for child in contract_root.findall('./result/rowset/*'):
         source_station_id = child.get("startStationID")
 
@@ -77,21 +88,35 @@ def read_contracts():
         title = child.get("title")
         date_issued = child.get("dateIssued")
         days = child.get("numDays")
-        price = child.get("price")
-        reward = child.get("reward")
-        collateral = child.get("collateral")
+        price = float(child.get("price"))
+        reward = float(child.get("reward"))
+        collateral = float(child.get("collateral"))
         volume = float(child.get("volume"))
+        total_volume += volume
+        total_collateral += collateral
+        total_reward += reward
+        isk = round(reward / volume, 2)
+        if type == "ItemExchange":
+            continue
+        if status == "InProgress" or status == "Outstanding":
+            active_collateral += collateral
+            active_reward += reward
+            active_volume += volume
         content += '<tr class="' + status + '">\n'
         content += '    <td>' + source_station_id + '</td>\n'
         content += '    <td>' + end_station_id + '</td>\n'
         content += '    <td>' + type + '</td>\n'
         content += '    <td>' + date_issued + '</td>\n'
         content += '    <td>' + status + '</td>\n'
-        content += '    <td>' + humanize.intcomma(price) + '</td>\n'
-        content += '    <td>' + humanize.intcomma(reward) + '</td>\n'
-        content += '    <td>' + humanize.intcomma(collateral) + '</td>\n'
-        content += '    <td>' + humanize.intcomma(math.ceil(volume)) + '</td>\n'
+        content += '    <td>' + str(price) + '</td>\n'
+        content += '    <td>' + str(reward) + '</td>\n'
+        content += '    <td>' + str(collateral) + '</td>\n'
+        content += '    <td>' + str(volume) + '</td>\n'
+        content += '    <td>' + str(isk) + '</td>\n'
         content += '</tr>'
+
+    content += '<tfoot><td colspan=6>Total</td><td>' + humanize.intcomma(total_reward) + '</td><td>' + humanize.intcomma(total_collateral) + '</td><td>' + humanize.intcomma(total_volume) + '</td><td>&nbsp;</td></thead>'
+    content += '<tfoot><td colspan=6>Unaccepted/In Progress</td><td>' + humanize.intcomma(active_reward) + '</td><td>' + humanize.intcomma(active_collateral) + '</td><td>' + humanize.intcomma(active_volume) + '</td><td>&nbsp;</td></thead>'
 
     return content
 
@@ -102,4 +127,4 @@ def read_contracts():
 def hello_world():
     template = read_contracts()
 
-    return render_template('contracts.html', data=Markup(template))
+    return render_template('contracts.html', data=Markup(template), time=cached_time)

@@ -6,12 +6,7 @@
 <title>untitled</title>
 <style type="text/css">
 
-#abc {
-	position: absolute;
-	z-index: 99;
-	left: 120px;
-	top: 60px;
-}
+
 
 tr.Completed {
     display: none;
@@ -41,12 +36,19 @@ a:hover {
 }
 
 </style>
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js">
+<script src="/static/js/jquery-latest.js"></script>
+<script src="/static/js/jquery.tablesorter.js"></script>
+<script type="text/javascript">
+$(document).ready(function()
+    {
+        $("#abc").tablesorter();
+    }
+);
 </script>
 </head>
 <body>
-<table id="abc">
-<thead><th>From</th><th>To</th><th style="width:100;">Type</th><th>Submitted</th><th style="width: 75;">Status</th><th style="width: 75;">Price</th><th style="width: 100;">Reward</th><th style="width: 100;">Collateral</th><th style="width:75;">Volume</th></thead>
+<table id="abc" class="tablesorter">
+<thead><th>From</th><th>To</th><th style="width:100;">Type</th><th>Submitted</th><th style="width: 75;">Status</th><th style="width: 75;">Price</th><th style="width: 100;">Reward</th><th style="width: 100;">Collateral</th><th style="width:75;">Volume</th><th>ISK/m3</th></thead>
 <tbody>
 {{ data }}
 </tbody>
@@ -54,7 +56,7 @@ a:hover {
 <input type="button" id="button2" value="Toggle Deleted" />
 
 </table>
-    <script>
+<script>
 $('#button1').click(function() {
     // all trs with level-1 class inside abc table
     $('#abc tr.Completed').toggle();
@@ -66,7 +68,7 @@ $('#button2').click(function() {
 });
 </script>
 
-
+Data Cached until: {{ time }}
 
 </body>
 </html>
