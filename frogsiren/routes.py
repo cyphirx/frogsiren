@@ -86,6 +86,7 @@ def read_contracts():
         status = child.get("status")
         title = child.get("title")
         date_issued = child.get("dateIssued")
+        date_completed = child.get("dateCompleted")
         days = child.get("numDays")
         price = float(child.get("price"))
         reward = float(child.get("reward"))
@@ -110,6 +111,7 @@ def read_contracts():
         content += '    <td>' + end_station.stationName.split(' ')[0] + '</td>\n'
         content += '    <td>' + type + '</td>\n'
         content += '    <td>' + date_issued + '</td>\n'
+        content += '    <td>' + date_completed + '</td>\n'
         content += '    <td>' + status + '</td>\n'
         content += '    <td>' + str(reward) + '</td>\n'
         content += '    <td>' + str(collateral) + '</td>\n'
@@ -117,8 +119,8 @@ def read_contracts():
         content += '    <td>' + str(isk) + '</td>\n'
         content += '</tr>'
 
-    content += '<tfoot><td colspan=6>Total</td><td>' + humanize.intcomma(total_reward) + '</td><td>' + humanize.intcomma(total_collateral) + '</td><td>' + humanize.intcomma(total_volume) + '</td><td>&nbsp;</td></thead>'
-    content += '<tfoot><td colspan=6>Unaccepted/In Progress</td><td>' + humanize.intcomma(active_reward) + '</td><td>' + humanize.intcomma(active_collateral) + '</td><td>' + humanize.intcomma(active_volume) + '</td><td>&nbsp;</td></thead>'
+    content += '<tfoot><td colspan=7>Total</td><td>' + humanize.intcomma(total_reward) + '</td><td>' + humanize.intcomma(total_collateral) + '</td><td>' + humanize.intcomma(total_volume) + '</td><td>&nbsp;</td></thead>'
+    content += '<tfoot><td colspan=7>Unaccepted/In Progress</td><td>' + humanize.intcomma(active_reward) + '</td><td>' + humanize.intcomma(active_collateral) + '</td><td>' + humanize.intcomma(active_volume) + '</td><td>&nbsp;</td></thead>'
 
     return content
 
