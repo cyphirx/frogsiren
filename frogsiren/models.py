@@ -47,6 +47,9 @@ if __name__ == "__main__":
         db.session.add(station)
         station = Stations(stationID=60013159, systemID=30004299, stationName="Sakht VI - Moon 7 - Genolution Biotech Production")
         db.session.add(station)
+        station = Stations(stationID=60008494, systemID=30002187, stationName="Amarr VIII (Oris) - Emperor Family Academy")
+        db.session.add(station)
+
         db.session.commit()
     exit(0)
 
