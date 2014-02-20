@@ -33,20 +33,30 @@ class Contract(db.Model):
     volume = db.Column(db.Float, unique=False)
 
 
-if __name__ == "__main__":
+def initial_db():
     from flask import Flask
+    from sqlalchemy import exists
     app = Flask(__name__)
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///cache.db'
     db.init_app(app)
     with app.test_request_context():
-        db.drop_all(app=app)
         db.create_all(app=app)
-        station = Stations(stationID=60003478,systemID=30005055, stationName="Zinkon VII - Moon 1 - Caldari Business Tribunal Accounting")
-        db.session.add(station)
-        station = Stations(stationID=60003760, systemID=30000142, stationName="Jita IV - Moon 4 - Caldari Navy Assembly Plant")
-        db.session.add(station)
-        station = Stations(stationID=60013159, systemID=30004299, stationName="Sakht VI - Moon 7 - Genolution Biotech Production")
-        db.session.add(station)
+        if not db.session.query(exists().where(Stations.stationID == 60003478)).scalar():
+            station = Stations(stationID=60003478,systemID=30005055, stationName="Zinkon VII - Moon 1 - Caldari Business Tribunal Accounting")
+            db.session.add(station)
+        if not db.session.query(exists().where(Stations.stationID == 60003760)).scalar():
+            station = Stations(stationID=60003760, systemID=30000142, stationName="Jita IV - Moon 4 - Caldari Navy Assembly Plant")
+            db.session.add(station)
+        if not db.session.query(exists().where(Stations.stationID == 60013159)).scalar():
+            station = Stations(stationID=60013159, systemID=30004299, stationName="Sakht VI - Moon 7 - Genolution Biotech Production")
+            db.session.add(station)
+        if not db.session.query(exists().where(Stations.stationID == 60008494)).scalar():
+            station = Stations(stationID=60008494, systemID=30002187, stationName="Amarr VIII (Oris) - Emperor Family Academy")
+            db.session.add(station)
         db.session.commit()
-    exit(0)
 
+
+
+if __name__ == "__main__":
+    initial_db()
+    exit(0)
