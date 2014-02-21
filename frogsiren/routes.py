@@ -3,7 +3,7 @@ import urllib2
 import xml.etree.ElementTree as ET
 import os
 import humanize
-from models import db, Stations, Contract
+from models import db, Stations, Contract, initial_db
 
 from flask import render_template, Markup
 from ConfigParser import ConfigParser
@@ -26,6 +26,7 @@ Config = ConfigParser()
 Config.read("settings.ini")
 cached_time = ""
 
+initial_db()
 
 if os.path.isfile('settings.ini'):
     keyID = ConfigSectionMap("api")['keyid']
