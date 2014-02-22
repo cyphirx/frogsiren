@@ -133,3 +133,5 @@ def hello_world():
     template = read_contracts()
 
     return render_template('contracts.html', data=Markup(template), time=cached_time)
+
+# vim: set ts=4 sw=4 et :

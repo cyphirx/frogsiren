@@ -60,3 +60,5 @@ def initial_db():
 if __name__ == "__main__":
     initial_db()
     exit(0)
+
+# vim: set ts=4 sw=4 et :
