@@ -103,11 +103,12 @@ def read_contracts():
             active_collateral += collateral
             active_reward += reward
             active_volume += volume
+        # Oh god why are we fetching these in the for loop
         start_station = Stations.query.filter_by(stationID=source_station_id).first()
         #TODO Add check on if price is set, volume is higher then max, isk/m3 lower then min, high collateral, not in correct station
         end_station = Stations.query.filter_by(stationID=end_station_id).first()
         content += '<tr class="' + status + '">\n'
-        content += '    <td><a href="#" onclick="CCPEVE.showContract(' + str(start_station.systemID) + ',' + contractID + ')">' + contractID + '</a></td>\n'
+        content += '    <td><a href="#" onclick="CCPEVE.showContract(' + str(start_station.systemID) + ',' + contractID + '); return false;">' + contractID + '</a></td>\n'
         content += '    <td>' + start_station.stationName.split(' ')[0] + '</td>\n'
         content += '    <td>' + end_station.stationName.split(' ')[0] + '</td>\n'
         content += '    <td>' + type + '</td>\n'
