@@ -1,3 +1,7 @@
+import datetime
+from time import strptime
+
+from sqlalchemy import and_, or_
 from frogsiren import app
 import urllib2
 import xml.etree.ElementTree as ET
@@ -7,6 +11,7 @@ from models import db, Stations, Contract, initial_db
 
 from flask import render_template, Markup
 from ConfigParser import ConfigParser
+
 
 def ConfigSectionMap(section):
     dict1 = {}
@@ -55,14 +60,10 @@ else:
     password = os.environ['app_admin_password']
 
 
-def read_contracts():
+def retrieve_contracts():
     global cached_time
-    total_volume = 0
-    total_collateral = 0
-    total_reward = 0
-    active_volume = 0
-    active_collateral = 0
-    active_reward = 0
+
+    print "Retrieving contracts"
     url = apiURL + "/corp/Contracts.xml.aspx?keyID=" + keyID + "&vCode=" + vCode
     request_api = urllib2.Request(url, headers={"Accept": "application/xml"})
     try:
@@ -70,72 +71,139 @@ def read_contracts():
     except:
         print url
         return "Error retrieving character ids url"
-
     contract_tree = ET.parse(f)
     contract_root = contract_tree.getroot()
-    content = ""
+
     for time in contract_root.findall('.'):
         cached_time = time.find('cachedUntil').text
+        current_time = time.find('currentTime').text
+
     for child in contract_root.findall('./result/rowset/*'):
         contractID = child.get("contractID")
-        source_station_id = child.get("startStationID")
-
-
-
-        end_station_id = child.get("endStationID")
+        issuerID = child.get("issuerID")
+        issuerCorpID = child.get("issuerCorpID")
+        assigneeID = child.get("assigneeID")
+        acceptorID = child.get("acceptorID")
+        startStationID = child.get("startStationID")
+        endStationID = child.get("endStationID")
         type = child.get("type")
         status = child.get("status")
         title = child.get("title")
-        date_issued = child.get("dateIssued")
-        date_completed = child.get("dateCompleted")
-        days = child.get("numDays")
-        price = float(child.get("price"))
-        reward = float(child.get("reward"))
-        collateral = float(child.get("collateral"))
-        volume = float(child.get("volume"))
-        total_volume += volume
-        total_collateral += collateral
-        total_reward += reward
-        isk = round(reward / volume, 2)
+        forCorp = child.get("forCorp")
+        availability = child.get("availability")
+        dateIssued = child.get("dateIssued")
+        dateExpired = child.get("dateExpired")
+        dateAccepted = child.get("dateAccepted")
+        numDays = child.get("numDays")
+        dateCompleted = child.get("dateCompleted")
+        price = child.get("price")
+        reward = child.get("reward")
+        collateral = child.get("collateral")
+        buyout = child.get("buyout")
+        volume = child.get("volume")
+        cached = cached_time
+
+        # Let's check if the record exists in the db
+        if not Contract.query.filter_by(contractID=contractID).scalar():
+            print "Inserting new record!"
+            contract = Contract(contractID=contractID, issuerID=issuerID, issuerCorpID=issuerCorpID,
+                                assigneeID=assigneeID, acceptorID=acceptorID, startStationID=startStationID,
+                                endStationID=endStationID, type=type, status=status, title=title, forCorp=forCorp,
+                                availability=availability, dateIssued=dateIssued, dateExpired=dateExpired,
+                                dateAccepted=dateAccepted, numDays=numDays, dateCompleted=dateCompleted, price=price,
+                                reward=reward, collateral=collateral, buyout=buyout, volume=volume, cached=cached)
+            #TODO Add trigger here for contractbot
+            db.session.add(contract)
+        else:
+            #Oh dear, something should go here
+            contract = Contract.query.filter_by(contractID=contractID).first()
+            if contract.status != status:
+                contract.assigneeID = assigneeID
+                contract.acceptorID = acceptorID
+                contract.status = status
+                contract.dateAccepted = datetime.date(dateAccepted)
+                contract.dateCompleted = datetime.date(dateCompleted)
+                contract.cached = cached_time
+            else:
+                continue
+    db.session.commit()
+
+
+def read_contracts():
+    total_volume = 0
+    total_collateral = 0
+    total_reward = 0
+    active_volume = 0
+    active_collateral = 0
+    active_reward = 0
+    content = ""
+
+    retrieve_contracts()
+
+    # Pre-populate station array to cut down on db requests
+    stations = Stations.query.all()
+
+    contracts = Contract.query.filter(Contract.type != "ItemExchange").order_by('dateIssued DESC').all()
+
+    for contract in contracts:
+
+        # Start working towards display
+        total_volume += contract.volume
+        total_collateral += contract.collateral
+        total_reward += contract.reward
+        isk = round(contract.reward / contract.volume, 2)
         if type == "ItemExchange":
             continue
-        if status == "InProgress" or status == "Outstanding":
-            active_collateral += collateral
-            active_reward += reward
-            active_volume += volume
+        if contract.status == "InProgress" or contract.status == "Outstanding":
+            active_collateral += contract.collateral
+            active_reward += contract.reward
+            active_volume += contract.volume
         # Oh god why are we fetching these in the for loop
-        start_station = Stations.query.filter_by(stationID=source_station_id).first()
+        # We'll replace one piece of bad code with another!
+        source_stationName = "UNKNOWN STATION"
+        end_stationName = "UNKNOWN STATION"
+        source_systemID = 9999999999
+        for station in stations:
+            if station.stationID == contract.startStationID:
+                source_stationName = station.stationName
+                source_systemID = station.systemID
+            if station.stationID == contract.endStationID:
+                end_stationName = station.stationName
+
         #TODO Add check on if price is set, volume is higher then max, isk/m3 lower then min, high collateral, not in correct station
-        end_station = Stations.query.filter_by(stationID=end_station_id).first()
-        content += '<tr class="' + status + '">\n'
-        if start_station:
-            content += '    <td><a href="#" onclick="CCPEVE.showContract(' + str(start_station.systemID) + ',' + contractID + '); return false;">' + contractID + '</a></td>\n'
-            content += '    <td>' + start_station.stationName.split(' ')[0] + '</td>\n'
+        content += '<tr class="' + contract.status + '">\n'
+        #TODO FUUUUUUUU, needs to be fixed
+        if source_stationName != "UNKNOWN STATION":
+            content += '    <td><a href="#" onclick="CCPEVE.showContract(' + str(
+                source_systemID) + ',' + str(contract.contractID) + '); return false;">' + str(contract.contractID) + '</a></td>\n'
+            content += '    <td>' + source_stationName.split(' ')[0] + '</td>\n'
         else:
-            content += '    <td>' + contractID + '</a></td>\n'
-            content += '    <td>UNKNOWN ID ( ' + source_station_id + ' )</td>\n'
+            content += '    <td>' + str(contract.contractID) + '</a></td>\n'
+            content += '    <td>UNKNOWN ID ( ' + str(contract.startStationID) + ' )</td>\n'
 
-        if end_station:
-            content += '    <td>' + end_station.stationName.split(' ')[0] + '</td>\n'
+        if end_stationName != "UNKNOWN STATION":
+            content += '    <td>' + end_stationName.split(' ')[0] + '</td>\n'
         else:
-            content += '    <td>UNKNOWN ID ( ' + end_station_id + ' )</td>\n'
+            content += '    <td>UNKNOWN ID ( ' + str(contract.endStationID) + ' )</td>\n'
 
-        content += '    <td>' + title + '</td>\n'
-        content += '    <td>' + date_issued + '</td>\n'
-        content += '    <td>' + date_completed + '</td>\n'
-        content += '    <td>' + status + '</td>\n'
-        content += '    <td>' + str(reward) + '</td>\n'
-        content += '    <td>' + str(collateral) + '</td>\n'
-        content += '    <td>' + str(volume) + '</td>\n'
+        content += '    <td>' + contract.title + '</td>\n'
+        content += '    <td>' + contract.dateIssued + '</td>\n'
+        content += '    <td>' + contract.dateCompleted + '</td>\n'
+        content += '    <td>' + contract.status + '</td>\n'
+        content += '    <td>' + str(contract.reward) + '</td>\n'
+        content += '    <td>' + str(contract.collateral) + '</td>\n'
+        content += '    <td>' + str(contract.volume) + '</td>\n'
         content += '    <td>' + str(isk) + '</td>\n'
         content += '</tr>'
 
-    content += '<tfoot><td colspan=7>Total</td><td>' + humanize.intcomma(total_reward) + '</td><td>' + humanize.intcomma(total_collateral) + '</td><td>' + humanize.intcomma(total_volume) + '</td><td>&nbsp;</td></thead>'
-    content += '<tfoot><td colspan=7>Unaccepted/In Progress</td><td>' + humanize.intcomma(active_reward) + '</td><td>' + humanize.intcomma(active_collateral) + '</td><td>' + humanize.intcomma(active_volume) + '</td><td>&nbsp;</td></thead>'
+    content += '<tfoot><td colspan=7>Total</td><td>' + humanize.intcomma(
+        total_reward) + '</td><td>' + humanize.intcomma(total_collateral) + '</td><td>' + humanize.intcomma(
+        total_volume) + '</td><td>&nbsp;</td></thead>'
+    content += '<tfoot><td colspan=7>Unaccepted/In Progress</td><td>' + humanize.intcomma(
+        active_reward) + '</td><td>' + humanize.intcomma(active_collateral) + '</td><td>' + humanize.intcomma(
+        active_volume) + '</td><td>&nbsp;</td></thead>'
 
     return content
-
-
 
 
 @app.route('/')

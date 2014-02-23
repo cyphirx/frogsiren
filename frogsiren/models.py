@@ -21,16 +21,17 @@ class Contract(db.Model):
     title = db.Column(db.Text, unique=False)
     forCorp = db.Column(db.Integer, unique=False)
     availability = db.Column(db.Text, unique=False)
-    dateIssued = db.Column(db.DateTime, unique=False)
-    dateExpired = db.Column(db.DateTime, unique=False)
-    dateAccepted = db.Column(db.DateTime, unique=False)
+    dateIssued = db.Column(db.Text, unique=False)
+    dateExpired = db.Column(db.Text, unique=False, nullable=True)
+    dateAccepted = db.Column(db.Text, unique=False, nullable=True)
     numDays = db.Column(db.Integer, unique=False)
-    dateCompleted = db.Column(db.DateTime, unique=False)
+    dateCompleted = db.Column(db.Text, unique=False, nullable=True)
     price = db.Column(db.Float, unique=False)
     reward = db.Column(db.Float, unique=False)
     collateral = db.Column(db.Float, unique=False)
     buyout = db.Column(db.Float, unique=False)
     volume = db.Column(db.Float, unique=False)
+    cached = db.Column(db.Text, unique=False)
 
 
 def initial_db():
