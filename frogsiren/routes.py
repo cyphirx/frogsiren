@@ -108,9 +108,18 @@ def read_contracts():
         #TODO Add check on if price is set, volume is higher then max, isk/m3 lower then min, high collateral, not in correct station
         end_station = Stations.query.filter_by(stationID=end_station_id).first()
         content += '<tr class="' + status + '">\n'
-        content += '    <td><a href="#" onclick="CCPEVE.showContract(' + str(start_station.systemID) + ',' + contractID + '); return false;">' + contractID + '</a></td>\n'
-        content += '    <td>' + start_station.stationName.split(' ')[0] + '</td>\n'
-        content += '    <td>' + end_station.stationName.split(' ')[0] + '</td>\n'
+        if start_station:
+            content += '    <td><a href="#" onclick="CCPEVE.showContract(' + str(start_station.systemID) + ',' + contractID + '); return false;">' + contractID + '</a></td>\n'
+            content += '    <td>' + start_station.stationName.split(' ')[0] + '</td>\n'
+        else:
+            content += '    <td>' + contractID + '</a></td>\n'
+            content += '    <td>UNKNOWN ID ( ' + source_station_id + ' )</td>\n'
+
+        if end_station:
+            content += '    <td>' + end_station.stationName.split(' ')[0] + '</td>\n'
+        else:
+            content += '    <td>UNKNOWN ID ( ' + end_station_id + ' )</td>\n'
+
         content += '    <td>' + type + '</td>\n'
         content += '    <td>' + date_issued + '</td>\n'
         content += '    <td>' + date_completed + '</td>\n'
