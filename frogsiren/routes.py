@@ -120,7 +120,7 @@ def read_contracts():
         else:
             content += '    <td>UNKNOWN ID ( ' + end_station_id + ' )</td>\n'
 
-        content += '    <td>' + type + '</td>\n'
+        content += '    <td>' + title + '</td>\n'
         content += '    <td>' + date_issued + '</td>\n'
         content += '    <td>' + date_completed + '</td>\n'
         content += '    <td>' + status + '</td>\n'
