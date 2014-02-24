@@ -8,7 +8,6 @@ import xml.etree.ElementTree as ET
 import os
 import humanize
 from models import db, Stations, Contract, initial_db
-
 from flask import render_template, Markup
 from ConfigParser import ConfigParser
 
@@ -32,6 +31,7 @@ Config.read("settings.ini")
 cached_time = ""
 
 initial_db()
+
 
 if os.path.isfile('settings.ini'):
     keyID = ConfigSectionMap("api")['keyid']
@@ -63,6 +63,13 @@ else:
 def retrieve_contracts():
     global cached_time
 
+    datestamp = datetime.datetime.now()
+
+    if cached_time and datestamp < cached_time:
+        print "Cache too old"
+        return
+
+
     print "Retrieving contracts"
     url = apiURL + "/corp/Contracts.xml.aspx?keyID=" + keyID + "&vCode=" + vCode
     request_api = urllib2.Request(url, headers={"Accept": "application/xml"})
@@ -74,9 +81,19 @@ def retrieve_contracts():
     contract_tree = ET.parse(f)
     contract_root = contract_tree.getroot()
 
+
     for time in contract_root.findall('.'):
-        cached_time = time.find('cachedUntil').text
+        cache_value = time.find('cachedUntil').text
+
+        cached_time = cache_value
+
+        #cached_time = datetime.datetime.strptime(cache_value,"%Y-%m-%d %H:%M%S")
+
+
+
         current_time = time.find('currentTime').text
+
+
 
     for child in contract_root.findall('./result/rowset/*'):
         contractID = child.get("contractID")
@@ -101,7 +118,7 @@ def retrieve_contracts():
         collateral = child.get("collateral")
         buyout = child.get("buyout")
         volume = child.get("volume")
-        cached = cached_time
+        cached = current_time
 
         # Let's check if the record exists in the db
         if not Contract.query.filter_by(contractID=contractID).scalar():
@@ -118,11 +135,12 @@ def retrieve_contracts():
             #Oh dear, something should go here
             contract = Contract.query.filter_by(contractID=contractID).first()
             if contract.status != status:
+                print "Updating record!"
                 contract.assigneeID = assigneeID
                 contract.acceptorID = acceptorID
                 contract.status = status
-                contract.dateAccepted = datetime.date(dateAccepted)
-                contract.dateCompleted = datetime.date(dateCompleted)
+                contract.dateAccepted = dateAccepted
+                contract.dateCompleted = dateCompleted
                 contract.cached = cached_time
             else:
                 continue
