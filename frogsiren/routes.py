@@ -65,9 +65,9 @@ def retrieve_contracts():
 
     datestamp = datetime.datetime.now()
 
-    if cached_time and datestamp < cached_time:
-        print "Cache too old"
-        return
+    #if cached_time and datestamp < cached_time:
+    #    print "Cache too old"
+    #    return
 
 
     print "Retrieving contracts"
