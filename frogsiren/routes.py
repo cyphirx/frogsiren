@@ -7,8 +7,10 @@ import urllib2
 import xml.etree.ElementTree as ET
 import os
 import humanize
+
 from models import db, Stations, Contract, initial_db
 from flask import render_template, Markup
+
 from ConfigParser import ConfigParser
 
 
@@ -229,5 +231,10 @@ def hello_world():
     template = read_contracts()
 
     return render_template('contracts.html', data=Markup(template), time=cached_time)
+
+@app.route('/check')
+def check_contracts():
+    retrieve_contracts()
+    return "Retrieved"
 
 # vim: set ts=4 sw=4 et :
