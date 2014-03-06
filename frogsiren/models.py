@@ -1,5 +1,6 @@
 from flask.ext.sqlalchemy import SQLAlchemy
 from sqlalchemy import and_
+from werkzeug.security import generate_password_hash, check_password_hash
 
 
 db = SQLAlchemy()
@@ -69,8 +70,10 @@ def initial_db():
             station = Stations(stationID=60008494, systemID=30002187,
                                stationName="Amarr VIII (Oris) - Emperor Family Academy")
             db.session.add(station)
-        if not db.session.query(
-                exists().where(and_(Routes.start_station == 60003478, Routes.end_station == 60003760))).scalar():
+        if not db.session.query(exists().where(and_(Routes.start_station == 60003478, Routes.end_station == 60003760))).scalar():
+            route = Routes(start_station=60003478, end_station=60003760, cost=330)
+            db.session.add(route)
+        if not db.session.query(exists().where(and_(Routes.start_station == 60003478, Routes.end_station == 60003760))).scalar():
             route = Routes(start_station=60003478, end_station=60003760, cost=330)
             db.session.add(route)
         db.session.commit()
