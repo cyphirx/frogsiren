@@ -7,8 +7,11 @@ import urllib2
 import xml.etree.ElementTree as ET
 import os
 import humanize
+from frogsiren.forms import SigninForm, RoutesForm
+
 from models import db, Stations, Contract, initial_db
-from flask import render_template, Markup
+from flask import render_template, Markup, session, redirect, url_for, request
+
 from ConfigParser import ConfigParser
 
 
@@ -31,7 +34,6 @@ Config.read("settings.ini")
 cached_time = ""
 
 initial_db()
-
 
 if os.path.isfile('settings.ini'):
     keyID = ConfigSectionMap("api")['keyid']
@@ -81,7 +83,6 @@ def retrieve_contracts():
     contract_tree = ET.parse(f)
     contract_root = contract_tree.getroot()
 
-
     for time in contract_root.findall('.'):
         cache_value = time.find('cachedUntil').text
 
@@ -92,8 +93,6 @@ def retrieve_contracts():
 
 
         current_time = time.find('currentTime').text
-
-
 
     for child in contract_root.findall('./result/rowset/*'):
         contractID = child.get("contractID")
@@ -156,8 +155,6 @@ def read_contracts():
     active_reward = 0
     content = ""
 
-    retrieve_contracts()
-
     # Pre-populate station array to cut down on db requests
     stations = Stations.query.all()
 
@@ -193,7 +190,8 @@ def read_contracts():
         #TODO FUUUUUUUU, needs to be fixed
         if source_stationName != "UNKNOWN STATION":
             content += '    <td><a href="#" onclick="CCPEVE.showContract(' + str(
-                source_systemID) + ',' + str(contract.contractID) + '); return false;">' + str(contract.contractID) + '</a></td>\n'
+                source_systemID) + ',' + str(contract.contractID) + '); return false;">' + str(
+                contract.contractID) + '</a></td>\n'
             content += '    <td>' + source_stationName.split(' ')[0] + '</td>\n'
         else:
             content += '    <td>' + str(contract.contractID) + '</a></td>\n'
@@ -224,10 +222,50 @@ def read_contracts():
     return content
 
 
-@app.route('/')
+@app.route('/contracts')
 def hello_world():
-    template = read_contracts()
+    if not 'email' in session:
+        return redirect(url_for('default_display'))
 
+    template = read_contracts()
     return render_template('contracts.html', data=Markup(template), time=cached_time)
 
-# vim: set ts=4 sw=4 et :
+
+@app.route('/')
+def default_display():
+    return render_template('unauthed.html')
+
+
+@app.route('/signin', methods=['GET', 'POST'])
+def signin():
+    form = SigninForm()
+
+    if 'email' in session:
+        return redirect(url_for('hello_world'))
+
+    if request.method == 'POST':
+        if form.name.data == user and form.password.data == password:
+            session['email'] = form.name.data
+            return redirect(url_for('hello_world'))
+        else:
+            return render_template('signin.html', form=form)
+
+    elif request.method == 'GET':
+        return render_template('signin.html', form=form)
+
+#TODO Create /delete/route/<id> method
+@app.route('/routes', methods=['GET', 'POST'])
+def routes():
+    if not 'email' in session:
+        return redirect(url_for('hello_world'))
+
+    form = RoutesForm()
+    return render_template('routes.html', form=form)
+
+
+@app.route('/check')
+def check_contracts():
+    retrieve_contracts()
+    return "Retrieved"
+
+    # vim: set ts=4 sw=4 et :

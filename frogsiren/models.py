@@ -1,12 +1,23 @@
 from flask.ext.sqlalchemy import SQLAlchemy
+from sqlalchemy import and_
+from werkzeug.security import generate_password_hash, check_password_hash
 
 
 db = SQLAlchemy()
+
 
 class Stations(db.Model):
     stationID = db.Column(db.Integer, unique=True, primary_key=True)
     stationName = db.Column(db.Text, unique=False)
     systemID = db.Column(db.Integer, unique=False)
+
+
+class Routes(db.Model):
+    route_id = db.Column(db.Integer, primary_key=True)
+    start_station = db.Column(db.Integer, unique=False)
+    end_station = db.Column(db.Integer, unique=False)
+    cost = db.Column(db.Integer, unique=False)
+
 
 class Contract(db.Model):
     contractID = db.Column(db.BigInteger, unique=True, primary_key=True)
@@ -37,25 +48,35 @@ class Contract(db.Model):
 def initial_db():
     from flask import Flask
     from sqlalchemy import exists
+
     app = Flask(__name__)
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///cache.db'
     db.init_app(app)
     with app.test_request_context():
         db.create_all(app=app)
         if not db.session.query(exists().where(Stations.stationID == 60003478)).scalar():
-            station = Stations(stationID=60003478,systemID=30005055, stationName="Zinkon VII - Moon 1 - Caldari Business Tribunal Accounting")
+            station = Stations(stationID=60003478, systemID=30005055,
+                               stationName="Zinkon VII - Moon 1 - Caldari Business Tribunal Accounting")
             db.session.add(station)
         if not db.session.query(exists().where(Stations.stationID == 60003760)).scalar():
-            station = Stations(stationID=60003760, systemID=30000142, stationName="Jita IV - Moon 4 - Caldari Navy Assembly Plant")
+            station = Stations(stationID=60003760, systemID=30000142,
+                               stationName="Jita IV - Moon 4 - Caldari Navy Assembly Plant")
             db.session.add(station)
         if not db.session.query(exists().where(Stations.stationID == 60013159)).scalar():
-            station = Stations(stationID=60013159, systemID=30004299, stationName="Sakht VI - Moon 7 - Genolution Biotech Production")
+            station = Stations(stationID=60013159, systemID=30004299,
+                               stationName="Sakht VI - Moon 7 - Genolution Biotech Production")
             db.session.add(station)
         if not db.session.query(exists().where(Stations.stationID == 60008494)).scalar():
-            station = Stations(stationID=60008494, systemID=30002187, stationName="Amarr VIII (Oris) - Emperor Family Academy")
+            station = Stations(stationID=60008494, systemID=30002187,
+                               stationName="Amarr VIII (Oris) - Emperor Family Academy")
             db.session.add(station)
+        if not db.session.query(exists().where(and_(Routes.start_station == 60003478, Routes.end_station == 60003760))).scalar():
+            route = Routes(start_station=60003478, end_station=60003760, cost=330)
+            db.session.add(route)
+        if not db.session.query(exists().where(and_(Routes.start_station == 60003478, Routes.end_station == 60003760))).scalar():
+            route = Routes(start_station=60003478, end_station=60003760, cost=330)
+            db.session.add(route)
         db.session.commit()
-
 
 
 if __name__ == "__main__":

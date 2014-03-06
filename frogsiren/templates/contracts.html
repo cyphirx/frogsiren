@@ -1,9 +1,6 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" 
-    "http://www.w3.org/TR/html4/loose.dtd">
+{% extends "layout.html" %}
 
-<html>
-<head>
-<title>untitled</title>
+{% block content %}
 <style type="text/css">
 
 
@@ -35,8 +32,7 @@ $(document).ready(function()
 );
 
 </script>
-</head>
-<body>
+
 <table id="abc" class="tablesorter">
 <thead><th>ID</th><th style="width:50;">From</th><th style="width:50;">To</th><th style="width:100;">Title</th><th>Submitted</th><th>Completed</th><th style="width: 75;">Status</th><th style="width: 100;">Reward</th><th style="width: 100;">Collateral</th><th style="width:75;">Volume</th><th>ISK/m3</th></thead>
 <tbody>
@@ -60,5 +56,4 @@ $('#button2').click(function() {
 
 Data Cached until: {{ time }}
 
-</body>
-</html>
+{% endblock %}
