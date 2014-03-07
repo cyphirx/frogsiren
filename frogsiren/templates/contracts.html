@@ -12,6 +12,11 @@ tr.Completed {
 tr.Deleted {
     display: none;
 }
+
+tr.Rejected {
+    display: none;
+}
+
 tr {
 	background: skyblue;
 }
@@ -40,6 +45,9 @@ $(document).ready(function()
 </tbody>
 <input type="button" id="button1" value="Toggle Completed" />
 <input type="button" id="button2" value="Toggle Deleted" />
+<input type="button" id="button3" value="Toggle Rejected" />
+<input type="button" id="button4" value="Toggle In-progress" />
+<input type="button" id="button5" value="Toggle Outstanding" />
 
 </table>
 <script>
@@ -51,6 +59,21 @@ $('#button1').click(function() {
 $('#button2').click(function() {
     // all trs with level-1 class inside abc table
     $('#abc tr.Deleted').toggle();
+});
+
+$('#button3').click(function() {
+    // all trs with level-1 class inside abc table
+    $('#abc tr.Rejected').toggle();
+});
+
+$('#button4').click(function() {
+    // all trs with level-1 class inside abc table
+    $('#abc tr.InProgress').toggle();
+});
+
+$('#button5').click(function() {
+    // all trs with level-1 class inside abc table
+    $('#abc tr.Outstanding').toggle();
 });
 </script>
 
