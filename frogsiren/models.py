@@ -17,6 +17,7 @@ class Routes(db.Model):
     start_station = db.Column(db.Integer, unique=False)
     end_station = db.Column(db.Integer, unique=False)
     cost = db.Column(db.Integer, unique=False)
+    status = db.Column(db.Boolean, unique=False)
 
 
 class Contract(db.Model):
@@ -71,10 +72,7 @@ def initial_db():
                                stationName="Amarr VIII (Oris) - Emperor Family Academy")
             db.session.add(station)
         if not db.session.query(exists().where(and_(Routes.start_station == 60003478, Routes.end_station == 60003760))).scalar():
-            route = Routes(start_station=60003478, end_station=60003760, cost=330)
-            db.session.add(route)
-        if not db.session.query(exists().where(and_(Routes.start_station == 60003478, Routes.end_station == 60003760))).scalar():
-            route = Routes(start_station=60003478, end_station=60003760, cost=330)
+            route = Routes(start_station=60003478, end_station=60003760, cost=330, status=0)
             db.session.add(route)
         db.session.commit()
 

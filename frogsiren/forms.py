@@ -13,7 +13,12 @@ class SigninForm(Form):
 
 
 class RoutesForm(Form):
-    start_station = TextField("Start Station")
-    end_station = TextField("End Station")
-    sumbit = SubmitField("Add Route")
+    start_station_id = TextField("Start Station ID")
+    end_station_id = TextField("End Station ID")
+    cost = TextField("Cost")
+    submit = SubmitField("Add Route")
 
+class StationForm(Form):
+    station_id = TextField("Station ID")
+    station_name = TextField("Station Name")
+    system_id = TextField("System ID")

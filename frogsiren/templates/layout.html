@@ -4,6 +4,7 @@
     <title>Frogsiren Freight</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
     ;
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 </head>
 <body>
 <header>
@@ -25,7 +26,7 @@
                         <li><a href="#">Admin</a>
                             <ul class="submenu">
                                 <li><a href="{{ url_for('routes') }}">Routes</a></li>
-                                <li><a href="#">Stations</a></li>
+                                <li><a href="{{ url_for('check_contracts') }}">Check</a></li>
                             </ul>
                         </li>
                     {% else %}

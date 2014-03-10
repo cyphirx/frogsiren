@@ -7,9 +7,9 @@ import urllib2
 import xml.etree.ElementTree as ET
 import os
 import humanize
-from frogsiren.forms import SigninForm, RoutesForm
+from frogsiren.forms import SigninForm, RoutesForm, StationForm
 
-from models import db, Stations, Contract, initial_db
+from models import db, Stations, Contract, initial_db, Routes
 from flask import render_template, Markup, session, redirect, url_for, request
 
 from ConfigParser import ConfigParser
@@ -65,13 +65,6 @@ else:
 def retrieve_contracts():
     global cached_time
 
-    datestamp = datetime.datetime.now()
-
-    #if cached_time and datestamp < cached_time:
-    #    print "Cache too old"
-    #    return
-
-
     print "Retrieving contracts"
     url = apiURL + "/corp/Contracts.xml.aspx?keyID=" + keyID + "&vCode=" + vCode
     request_api = urllib2.Request(url, headers={"Accept": "application/xml"})
@@ -85,13 +78,7 @@ def retrieve_contracts():
 
     for time in contract_root.findall('.'):
         cache_value = time.find('cachedUntil').text
-
         cached_time = cache_value
-
-        #cached_time = datetime.datetime.strptime(cache_value,"%Y-%m-%d %H:%M%S")
-
-
-
         current_time = time.find('currentTime').text
 
     for child in contract_root.findall('./result/rowset/*'):
@@ -121,7 +108,7 @@ def retrieve_contracts():
 
         # Let's check if the record exists in the db
         if not Contract.query.filter_by(contractID=contractID).scalar():
-            print "Inserting new record!"
+            print "Inserting new record! Contract " + str(contractID)
             contract = Contract(contractID=contractID, issuerID=issuerID, issuerCorpID=issuerCorpID,
                                 assigneeID=assigneeID, acceptorID=acceptorID, startStationID=startStationID,
                                 endStationID=endStationID, type=type, status=status, title=title, forCorp=forCorp,
@@ -150,15 +137,14 @@ def read_contracts():
     total_volume = 0
     total_collateral = 0
     total_reward = 0
+    count_progress = 0
+    count_pending = 0
     active_volume = 0
     active_collateral = 0
     active_reward = 0
     content = ""
 
-    # Pre-populate station array to cut down on db requests
-    stations = Stations.query.all()
-
-    contracts = Contract.query.filter(Contract.type != "ItemExchange").order_by('dateIssued DESC').all()
+    contracts = db.engine.execute("SELECT c.contractID, s.stationName AS startStation, s.systemID AS startSystemID, c.startStationID, e.stationName AS endStation, c.endStationId, c.status, c.title, c.dateIssued, c.dateCompleted, c.reward, c.collateral, c.volume, r.cost AS fee FROM contract AS c LEFT JOIN stations AS s on c.startStationID = s.stationID LEFT JOIN stations AS e ON c.endStationId = e.stationID LEFT JOIN  routes AS r ON (c.startStationID = r.start_station AND c.endStationID = r.end_station) WHERE c.type = 'Courier' ORDER BY dateIssued DESC ").fetchall()
 
     for contract in contracts:
 
@@ -173,34 +159,34 @@ def read_contracts():
             active_collateral += contract.collateral
             active_reward += contract.reward
             active_volume += contract.volume
-        # Oh god why are we fetching these in the for loop
-        # We'll replace one piece of bad code with another!
-        source_stationName = "UNKNOWN STATION"
-        end_stationName = "UNKNOWN STATION"
-        source_systemID = 9999999999
-        for station in stations:
-            if station.stationID == contract.startStationID:
-                source_stationName = station.stationName
-                source_systemID = station.systemID
-            if station.stationID == contract.endStationID:
-                end_stationName = station.stationName
+
+        if contract.status == "InProgress":
+            count_progress += 1
+
+        if contract.status == "Outstanding":
+            count_pending += 1
+
 
         #TODO Add check on if price is set, volume is higher then max, isk/m3 lower then min, high collateral, not in correct station
         content += '<tr class="' + contract.status + '">\n'
-        #TODO FUUUUUUUU, needs to be fixed
-        if source_stationName != "UNKNOWN STATION":
-            content += '    <td><a href="#" onclick="CCPEVE.showContract(' + str(
-                source_systemID) + ',' + str(contract.contractID) + '); return false;">' + str(
+
+        if contract.startStation:
+            javascript = '    <td><a href="#" onclick="CCPEVE.showContract(' + str(
+                contract.startSystemID) + ',' + str(contract.contractID) + ')">' + str(
                 contract.contractID) + '</a></td>\n'
-            content += '    <td>' + source_stationName.split(' ')[0] + '</td>\n'
+            content += javascript
+            content += '    <td>' + contract.startStation.split(' ')[0] + '</td>\n'
         else:
             content += '    <td>' + str(contract.contractID) + '</a></td>\n'
             content += '    <td>UNKNOWN ID ( ' + str(contract.startStationID) + ' )</td>\n'
 
-        if end_stationName != "UNKNOWN STATION":
-            content += '    <td>' + end_stationName.split(' ')[0] + '</td>\n'
+        if contract.endStation:
+            content += '    <td>' + contract.endStation.split(' ')[0] + '</td>\n'
         else:
             content += '    <td>UNKNOWN ID ( ' + str(contract.endStationID) + ' )</td>\n'
+
+
+
 
         content += '    <td>' + contract.title + '</td>\n'
         content += '    <td>' + contract.dateIssued + '</td>\n'
@@ -209,18 +195,28 @@ def read_contracts():
         content += '    <td>' + str(contract.reward) + '</td>\n'
         content += '    <td>' + str(contract.collateral) + '</td>\n'
         content += '    <td>' + str(contract.volume) + '</td>\n'
-        content += '    <td>' + str(isk) + '</td>\n'
+        if contract.fee > isk:
+            color = "red"
+        else:
+            color = "green"
+
+        content += '    <td style="background-color:' + color + '">' + str(isk) + '</td>\n'
         content += '</tr>'
 
-    content += '<tfoot><td colspan=7>Total</td><td>' + humanize.intcomma(
+    content += '<tfoot><td>Outstanding</td><td style="text-align: center"><b>' + str(count_pending) + '</b></td><td colspan=5 style="text-align: right">Total</td><td>' + humanize.intcomma(
         total_reward) + '</td><td>' + humanize.intcomma(total_collateral) + '</td><td>' + humanize.intcomma(
-        total_volume) + '</td><td>&nbsp;</td></thead>'
-    content += '<tfoot><td colspan=7>Unaccepted/In Progress</td><td>' + humanize.intcomma(
+        total_volume) + '</td><td>&nbsp;</td></tfoot>\n'
+    content += '<tfoot><td>Inprogress</td><td style="text-align: center"><b>' + str(count_progress) + '</b></td><td colspan=5 style="text-align: right">Unaccepted/In Progress</td><td>' + humanize.intcomma(
         active_reward) + '</td><td>' + humanize.intcomma(active_collateral) + '</td><td>' + humanize.intcomma(
-        active_volume) + '</td><td>&nbsp;</td></thead>'
+        active_volume) + '</td><td>&nbsp;</td></tfoot>\n'
 
     return content
 
+
+@app.route('/report')
+def display_report():
+    #SELECT COUNT(*), SUM(reward), SUM(reward) / COUNT(*) AS avg_reward, DATE(dateCompleted) FROM contract WHERE type = 'Courier' AND status = 'Completed' GROUP BY DATE(dateCompleted)
+    return render_template('reports.html')
 
 @app.route('/contracts')
 def hello_world():
@@ -258,14 +254,32 @@ def signin():
 def routes():
     if not 'email' in session:
         return redirect(url_for('hello_world'))
+    station_content = ""
+    route_content = ""
 
-    form = RoutesForm()
-    return render_template('routes.html', form=form)
+    rform = RoutesForm()
+    sform = StationForm()
+
+    # Filling out route information
+    routes = db.engine.execute("SELECT r.route_id as id, s.stationName as start, e.stationName as end, r.cost as cost, r.status as status FROM routes AS r JOIN stations AS s on s.stationID=r.start_station JOIN stations AS e on e.stationID = r.end_station WHERE status = 1")
+    #routes = Routes.query.all()
+    for route in routes:
+        if route.status == True:
+            status_line = "Enabled"
+        else:
+            status_line = "Disabled"
+        route_content += "<tr><td>" + str(route.start) + "</td><td>" + str(route.end) + "</td><td>" + str(route.cost) + "</td><td>" + status_line + "</td><td><a href='/enable/route/" + str(route.id) + "'><img src='/static/img/enable.png' alt=\"Enable\"></a> <a href='/disable/route/" + str(route.id) + "'><img src='/static/img/disable.png' alt=\"Disable\"></a> <a href='/delete/route/" + str(route.id) + "'><img src='/static/img/remove.png' alt=\"Remove\"></a></td></tr>\n"
+
+    if request.method == 'POST':
+        station_content = "hdfhds"
+
+    return render_template('routes.html', rform=rform, sform=sform, route_content=Markup(route_content), station_content=Markup(station_content))
 
 
 @app.route('/check')
 def check_contracts():
     retrieve_contracts()
     return "Retrieved"
+
 
     # vim: set ts=4 sw=4 et :
