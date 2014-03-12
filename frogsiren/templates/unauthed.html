@@ -9,10 +9,11 @@
 
     We service the following routes currently:
     <table>
+        <thead><th>Station</th><td>&nbsp</td><th>Station</th><td>&nbsp</td><th>Cost</th></thead>
         {{ route_info }}
     </table>
-
-    Our running 5 day average wait time is: {{ running_average }} <br />
-    Overall wait time is: {{ overall_average }}
+    <br />
+    Our running 5 day average wait time is: <b>{{ running_average }}</b> hours<br />
+    Overall wait time is: <b>{{ overall_average }}</b> hours<br />
   </div>
 {% endblock %}

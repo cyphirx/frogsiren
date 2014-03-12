@@ -108,7 +108,7 @@ def retrieve_contracts():
 
         # Let's check if the record exists in the db
         if not Contract.query.filter_by(contractID=contractID).scalar():
-            print "Inserting new record! Contract " + str(contractID)
+            print "Inserting new record! " + type.captialize() + "Contract " + str(contractID)
             contract = Contract(contractID=contractID, issuerID=issuerID, issuerCorpID=issuerCorpID,
                                 assigneeID=assigneeID, acceptorID=acceptorID, startStationID=startStationID,
                                 endStationID=endStationID, type=type, status=status, title=title, forCorp=forCorp,
@@ -238,9 +238,13 @@ def default_display():
     for route in routes:
         route_info += "<tr><td>" + route.start + "</td><td><=></td><td>" + route.end + "</td><td>=</td><td>" + str(route.cost) + "</td></tr>\n"
 
-    running_sql = db.engine.execute("SELECT AVG((strftime('%s', dateCompleted) - strftime('%s',dateIssued)) / 60 / 60) AS avg_time FROM contract WHERE dateCompleted BETWEEN DATETIME('now', '-5 days') AND DATETIME('now', 'localtime')")
+    running_sql = db.engine.execute("SELECT AVG((strftime('%s', dateCompleted) - strftime('%s',dateIssued)) / 60 / 60) AS return_value FROM contract WHERE type = 'Courier' AND dateCompleted BETWEEN DATETIME('now', '-5 days') AND DATETIME('now', 'localtime') AND status IS NOT 'Rejected'")
+    for result in running_sql:
+        running_average = "%.2f" % result.return_value
+    overall_sql = db.engine.execute("SELECT AVG((strftime('%s', dateCompleted) - strftime('%s',dateIssued)) / 60 / 60) AS return_value FROM contract WHERE type = 'Courier' AND status IS NOT 'Rejected'")
+    for oresult in overall_sql:
+        overall_average = "%.2f" % oresult.return_value
 
-    print running_sql
     return render_template('unauthed.html', route_info=Markup(route_info), running_average=running_average, overall_average=overall_average)
 
 
@@ -272,6 +276,20 @@ def routes():
     rform = RoutesForm()
     sform = StationForm()
 
+    #TODO FIX MESSAGING HERE!
+    if request.method == 'POST':
+        if request.form['submit'] == 'Add A Station':
+            #Adding a station, station things go here
+            station = Stations(stationID=sform.station_id.data,stationName=sform.station_name.data,systemID=sform.system_id.data)
+            db.session.add(station)
+            db.session.commit()
+            print "Adding a station id " + sform.station_id.data
+        elif request.form['submit'] == 'Add Route':
+            route = Routes(start_station=rform.start_station_id.data,end_station=rform.end_station_id.data,cost=rform.cost.data,status=1)
+            db.session.add(route)
+            db.session.commit()
+            print "Adding a route"
+
     # Filling out route information
     routes = db.engine.execute("SELECT r.route_id as id, s.stationName as start, e.stationName as end, r.cost as cost, r.status as status FROM routes AS r JOIN stations AS s on s.stationID=r.start_station JOIN stations AS e on e.stationID = r.end_station WHERE status = 1")
     #routes = Routes.query.all()
@@ -286,20 +304,6 @@ def routes():
 
     for station in stations:
         station_content += "<tr><td> " + station.stationName + "</td><td>" + str(station.stationID) + "</td><td>" + str(station.systemID) + "</td></tr>\n"
-
-    #TODO FIX MESSAGING HERE!
-    if request.method == 'POST':
-        if request.form['submit'] == 'Add A Station':
-            #Adding a station, station things go here
-            station = Stations(stationID=sform.station_id.data,stationName=sform.station_name.data,systemID=sform.system_id.data)
-            db.session.add(station)
-            db.session.commit()
-            print "Adding a station id " + sform.station_id.data
-        elif request.form['submit'] == 'Add Route':
-            route = Routes(start_station=rform.start_station_id.data,end_station=rform.end_station_id.data,cost=rform.cost.data,status=1)
-            db.session.add(route)
-            db.session.commit()
-            print "Adding a route"
 
 
     return render_template('routes.html', rform=rform, sform=sform, route_content=Markup(route_content), station_content=Markup(station_content))
