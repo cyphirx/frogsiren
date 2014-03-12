@@ -216,6 +216,7 @@ def read_contracts():
 @app.route('/report')
 def display_report():
     #SELECT COUNT(*), SUM(reward), SUM(reward) / COUNT(*) AS avg_reward, DATE(dateCompleted) FROM contract WHERE type = 'Courier' AND status = 'Completed' GROUP BY DATE(dateCompleted)
+    #SELECT AVG((strftime('%s', dateCompleted) - strftime('%s',dateIssued)) / 60 / 60) AS avg_time, MAX((strftime('%s', dateCompleted) - strftime('%s',dateIssued)) / 60 / 60 )  FROM contract WHERE type = 'Courier' AND status = 'Completed'
     return render_template('reports.html')
 
 @app.route('/contracts')
@@ -229,7 +230,18 @@ def hello_world():
 
 @app.route('/')
 def default_display():
-    return render_template('unauthed.html')
+    route_info = ""
+    running_average = ""
+    overall_average = ""
+
+    routes = db.engine.execute("SELECT s.stationName as start, e.stationName as end, r.cost as cost FROM routes AS r JOIN stations AS s on s.stationID=r.start_station JOIN stations AS e on e.stationID = r.end_station WHERE status = 1")
+    for route in routes:
+        route_info += "<tr><td>" + route.start + "</td><td><=></td><td>" + route.end + "</td><td>=</td><td>" + str(route.cost) + "</td></tr>\n"
+
+    running_sql = db.engine.execute("SELECT AVG((strftime('%s', dateCompleted) - strftime('%s',dateIssued)) / 60 / 60) AS avg_time FROM contract WHERE dateCompleted BETWEEN DATETIME('now', '-5 days') AND DATETIME('now', 'localtime')")
+
+    print running_sql
+    return render_template('unauthed.html', route_info=Markup(route_info), running_average=running_average, overall_average=overall_average)
 
 
 @app.route('/signin', methods=['GET', 'POST'])
@@ -249,7 +261,7 @@ def signin():
     elif request.method == 'GET':
         return render_template('signin.html', form=form)
 
-#TODO Create /delete/route/<id> method
+#TODO Create /delete/route/<id> method and /disable/route
 @app.route('/routes', methods=['GET', 'POST'])
 def routes():
     if not 'email' in session:

@@ -3,12 +3,16 @@
   <div class="jumbo">
     <h2></h2>
     <marquee behavior="scroll" direction="left"><img src="/static/img/frogsiren.gif" alt="Frogsiren Freight" /></marquee>
-    <ul>
+    <h1>Welcome to Frogsiren Freight!</h1>
+    <h2>For more information, please refer to our post in Services and Investments sections <a href="https://forum.pleaseignore.com/topic/60494-frogsiren-freight-jf-service-jita-amarr-and-sendaya/">here</a></h2>
 
-        <li>Average Order size</li>
-        <li>Total m3 moved / Total collateralized</li>
-        <li>Average wait time</li>
-        <li>Available Shipping Routes</li>
-    </ul>
+
+    We service the following routes currently:
+    <table>
+        {{ route_info }}
+    </table>
+
+    Our running 5 day average wait time is: {{ running_average }} <br />
+    Overall wait time is: {{ overall_average }}
   </div>
 {% endblock %}
