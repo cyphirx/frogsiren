@@ -11,6 +11,7 @@
     <h2>Stations</h2>
     <table>
         <thead><th>Station Name</th><th>StationID</th><th>SystemID</th></thead>
+        {{ station_content }}
     </table>
 
   <h2>Add a route</h2>
@@ -19,7 +20,7 @@
           <tr><td>End StationID</td><td>End StationID</td><td>Cost</td></tr>
           <tr><td> {{ rform.start_station_id }} </td><td> {{ rform.end_station_id }} </td><td> {{ rform.cost }} </td></tr>
       </table>
-      <input type="button" value="Add Route">
+      {{ rform.submit }}
 
   </form>
 
@@ -29,8 +30,7 @@
           <tr><td>StationID</td><td>Station Name</td><td>SystemID</td></tr>
           <tr><td>{{ sform.station_id }}</td><td>{{ sform.station_name }}</td><td>{{ sform.system_id }}</td></tr>
       </table>
-      <input type="button" value="Add Station">
-
+      {{ sform.submit }}
   </form>
 
 
