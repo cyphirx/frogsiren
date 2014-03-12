@@ -22,3 +22,4 @@ class StationForm(Form):
     station_id = TextField("Station ID")
     station_name = TextField("Station Name")
     system_id = TextField("System ID")
+    submit = SubmitField("Add A Station")

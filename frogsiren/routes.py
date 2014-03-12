@@ -270,8 +270,25 @@ def routes():
             status_line = "Disabled"
         route_content += "<tr><td>" + str(route.start) + "</td><td>" + str(route.end) + "</td><td>" + str(route.cost) + "</td><td>" + status_line + "</td><td><a href='/enable/route/" + str(route.id) + "'><img src='/static/img/enable.png' alt=\"Enable\"></a> <a href='/disable/route/" + str(route.id) + "'><img src='/static/img/disable.png' alt=\"Disable\"></a> <a href='/delete/route/" + str(route.id) + "'><img src='/static/img/remove.png' alt=\"Remove\"></a></td></tr>\n"
 
+    stations = Stations.query.all()
+
+    for station in stations:
+        station_content += "<tr><td> " + station.stationName + "</td><td>" + str(station.stationID) + "</td><td>" + str(station.systemID) + "</td></tr>\n"
+
+    #TODO FIX MESSAGING HERE!
     if request.method == 'POST':
-        station_content = "hdfhds"
+        if request.form['submit'] == 'Add A Station':
+            #Adding a station, station things go here
+            station = Stations(stationID=sform.station_id.data,stationName=sform.station_name.data,systemID=sform.system_id.data)
+            db.session.add(station)
+            db.session.commit()
+            print "Adding a station id " + sform.station_id.data
+        elif request.form['submit'] == 'Add Route':
+            route = Routes(start_station=rform.start_station_id.data,end_station=rform.end_station_id.data,cost=rform.cost.data,status=1)
+            db.session.add(route)
+            db.session.commit()
+            print "Adding a route"
+
 
     return render_template('routes.html', rform=rform, sform=sform, route_content=Markup(route_content), station_content=Markup(station_content))
 
