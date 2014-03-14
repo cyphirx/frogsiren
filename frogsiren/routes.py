@@ -108,7 +108,7 @@ def retrieve_contracts():
 
         # Let's check if the record exists in the db
         if not Contract.query.filter_by(contractID=contractID).scalar():
-            print "Inserting new record! " + type.captialize() + "Contract " + str(contractID)
+            print "Inserting new record! " + type.title() + "Contract " + str(contractID)
             contract = Contract(contractID=contractID, issuerID=issuerID, issuerCorpID=issuerCorpID,
                                 assigneeID=assigneeID, acceptorID=acceptorID, startStationID=startStationID,
                                 endStationID=endStationID, type=type, status=status, title=title, forCorp=forCorp,
