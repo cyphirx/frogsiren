@@ -9,8 +9,8 @@ import os
 import humanize
 from frogsiren.forms import SigninForm, RoutesForm, StationForm
 
-from models import db, Stations, Contract, initial_db, Routes
-from flask import render_template, Markup, session, redirect, url_for, request
+from models import db, Stations, Contract, initial_db, Routes, Queue
+from flask import render_template, Markup, session, redirect, url_for, request, jsonify, abort
 
 from ConfigParser import ConfigParser
 
@@ -116,6 +116,15 @@ def retrieve_contracts():
                                 dateAccepted=dateAccepted, numDays=numDays, dateCompleted=dateCompleted, price=price,
                                 reward=reward, collateral=collateral, buyout=buyout, volume=volume, cached=cached)
             #TODO Add trigger here for contractbot
+            if type == "Courier":
+                station = Stations.query.filter_by(stationID=startStationID).first()
+                if station:
+                    stationName = station.stationName
+                else:
+                    stationName = "UNKNOWN"
+                message = "WOOP WOOP! New contract! From: " + stationName.split(' ')[0] + " Reward: " + humanize.intcomma(reward) + "isk Collateral: " + humanize.intcomma(collateral) + " Volume:" + humanize.intcomma(volume) + "m3 Note: " + title
+                queue = Queue(note=message,tStamp=datetime.datetime.now())
+                db.session.add(queue)
             db.session.add(contract)
         else:
             #Oh dear, something should go here
@@ -211,6 +220,37 @@ def read_contracts():
         active_volume) + '</td><td>&nbsp;</td></tfoot>\n'
 
     return content
+
+
+@app.route('/api/pending')
+def api_inprogress():
+        contracts = db.engine.execute("SELECT c.contractID, s.stationName AS startStation, s.systemID AS startSystemID, c.startStationID, e.stationName AS endStation, c.endStationId, c.status, c.title, c.dateIssued, c.dateCompleted, c.reward, c.collateral, c.volume, r.cost AS fee FROM contract AS c LEFT JOIN stations AS s on c.startStationID = s.stationID LEFT JOIN stations AS e ON c.endStationId = e.stationID LEFT JOIN  routes AS r ON (c.startStationID = r.start_station AND c.endStationID = r.end_station) WHERE c.type = 'Courier' AND (c.status = 'InProgess' OR c.status = 'Pending')  ORDER BY dateIssued DESC ").fetchall()
+
+@app.route('/api/queue', methods=['GET','POST'])
+def display_queue():
+    note = []
+
+
+    if request.method == 'POST':
+        # Time to do some deleting
+        statement = "DELETE FROM queue"
+        db.engine.execute(statement)
+
+    # Let's build the statement
+    statement = "SELECT note, tStamp FROM queue"
+    tables = db.engine.execute(statement)
+
+
+    for result in tables:
+
+        note += [ { "note": result.note,
+                   "tstamp": result.tStamp
+                          }]
+    if len(note) == 0:
+        abort(404)
+    return jsonify( { 'messages': note } )
+
+
 
 
 @app.route('/report')

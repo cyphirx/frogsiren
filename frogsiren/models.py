@@ -46,6 +46,12 @@ class Contract(db.Model):
     cached = db.Column(db.Text, unique=False)
 
 
+class Queue(db.Model):
+    id = db.Column(db.Integer, unique=True, primary_key=True)
+    note = db.Column(db.Text, unique=False)
+    tStamp = db.Column(db.DateTime, unique=False)
+
+
 def initial_db():
     from flask import Flask
     from sqlalchemy import exists
