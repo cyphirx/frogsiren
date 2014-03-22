@@ -7,12 +7,14 @@ db = SQLAlchemy()
 
 
 class Stations(db.Model):
+    __tablename = "gen_stations"
     stationID = db.Column(db.Integer, unique=True, primary_key=True)
     stationName = db.Column(db.Text, unique=False)
     systemID = db.Column(db.Integer, unique=False)
 
 
 class Routes(db.Model):
+    __tablename__ = "ship_routes"
     route_id = db.Column(db.Integer, primary_key=True)
     start_station = db.Column(db.Integer, unique=False)
     end_station = db.Column(db.Integer, unique=False)
@@ -21,6 +23,7 @@ class Routes(db.Model):
 
 
 class Contract(db.Model):
+    __tablename__ = "ship_contract"
     contractID = db.Column(db.BigInteger, unique=True, primary_key=True)
     issuerID = db.Column(db.BigInteger, unique=False)
     issuerCorpID = db.Column(db.BigInteger, unique=False)
@@ -47,6 +50,7 @@ class Contract(db.Model):
 
 
 class Queue(db.Model):
+    __tablename__ = "gen_queue"
     id = db.Column(db.Integer, unique=True, primary_key=True)
     note = db.Column(db.Text, unique=False)
     tStamp = db.Column(db.DateTime, unique=False)

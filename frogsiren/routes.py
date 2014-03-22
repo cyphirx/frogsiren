@@ -115,15 +115,16 @@ def retrieve_contracts():
                                 availability=availability, dateIssued=dateIssued, dateExpired=dateExpired,
                                 dateAccepted=dateAccepted, numDays=numDays, dateCompleted=dateCompleted, price=price,
                                 reward=reward, collateral=collateral, buyout=buyout, volume=volume, cached=cached)
-            #TODO Add trigger here for contractbot
             if type == "Courier":
                 station = Stations.query.filter_by(stationID=startStationID).first()
                 if station:
                     stationName = station.stationName
                 else:
                     stationName = "UNKNOWN"
-                message = "WOOP WOOP! New contract! From: " + stationName.split(' ')[0] + " Reward: " + humanize.intcomma(reward) + "isk Collateral: " + humanize.intcomma(collateral) + " Volume:" + humanize.intcomma(volume) + "m3 Note: " + title
-                queue = Queue(note=message,tStamp=datetime.datetime.now())
+                message = "WOOP WOOP! New contract! From: " + stationName.split(' ')[
+                    0] + " Reward: " + humanize.intcomma(reward) + "isk Collateral: " + humanize.intcomma(
+                    collateral) + " Volume:" + humanize.intcomma(volume) + "m3 Note: " + title
+                queue = Queue(note=message, tStamp=datetime.datetime.now())
                 db.session.add(queue)
             db.session.add(contract)
         else:
@@ -152,8 +153,9 @@ def read_contracts():
     active_collateral = 0
     active_reward = 0
     content = ""
-
-    contracts = db.engine.execute("SELECT c.contractID, s.stationName AS startStation, s.systemID AS startSystemID, c.startStationID, e.stationName AS endStation, c.endStationId, c.status, c.title, c.dateIssued, c.dateCompleted, c.reward, c.collateral, c.volume, r.cost AS fee FROM contract AS c LEFT JOIN stations AS s on c.startStationID = s.stationID LEFT JOIN stations AS e ON c.endStationId = e.stationID LEFT JOIN  routes AS r ON (c.startStationID = r.start_station AND c.endStationID = r.end_station) WHERE c.type = 'Courier' ORDER BY dateIssued DESC ").fetchall()
+    #TODO Need to look into pagination here
+    contracts = db.engine.execute(
+        "SELECT c.contractID, s.stationName AS startStation, s.systemID AS startSystemID, c.startStationID, e.stationName AS endStation, c.endStationId, c.status, c.title, c.dateIssued, c.dateCompleted, c.reward, c.collateral, c.volume, r.cost AS fee FROM ship_contract AS c LEFT JOIN gen_stations AS s on c.startStationID = s.stationID LEFT JOIN gen_stations AS e ON c.endStationId = e.stationID LEFT JOIN  ship_routes AS r ON (c.startStationID = r.start_station AND c.endStationID = r.end_station) WHERE c.type = 'Courier' ORDER BY dateIssued DESC ").fetchall()
 
     for contract in contracts:
 
@@ -194,9 +196,6 @@ def read_contracts():
         else:
             content += '    <td>UNKNOWN ID ( ' + str(contract.endStationID) + ' )</td>\n'
 
-
-
-
         content += '    <td>' + contract.title + '</td>\n'
         content += '    <td>' + contract.dateIssued + '</td>\n'
         content += '    <td>' + contract.dateCompleted + '</td>\n'
@@ -212,10 +211,12 @@ def read_contracts():
         content += '    <td style="background-color:' + color + '">' + str(isk) + '</td>\n'
         content += '</tr>'
 
-    content += '<tfoot><td>Outstanding</td><td style="text-align: center"><b>' + str(count_pending) + '</b></td><td colspan=5 style="text-align: right">Total</td><td>' + humanize.intcomma(
+    content += '<tfoot><td>Outstanding</td><td style="text-align: center"><b>' + str(
+        count_pending) + '</b></td><td colspan=5 style="text-align: right">Total</td><td>' + humanize.intcomma(
         total_reward) + '</td><td>' + humanize.intcomma(total_collateral) + '</td><td>' + humanize.intcomma(
         total_volume) + '</td><td>&nbsp;</td></tfoot>\n'
-    content += '<tfoot><td>Inprogress</td><td style="text-align: center"><b>' + str(count_progress) + '</b></td><td colspan=5 style="text-align: right">Unaccepted/In Progress</td><td>' + humanize.intcomma(
+    content += '<tfoot><td>Inprogress</td><td style="text-align: center"><b>' + str(
+        count_progress) + '</b></td><td colspan=5 style="text-align: right">Unaccepted/In Progress</td><td>' + humanize.intcomma(
         active_reward) + '</td><td>' + humanize.intcomma(active_collateral) + '</td><td>' + humanize.intcomma(
         active_volume) + '</td><td>&nbsp;</td></tfoot>\n'
 
@@ -224,33 +225,30 @@ def read_contracts():
 
 @app.route('/api/pending')
 def api_inprogress():
-        contracts = db.engine.execute("SELECT c.contractID, s.stationName AS startStation, s.systemID AS startSystemID, c.startStationID, e.stationName AS endStation, c.endStationId, c.status, c.title, c.dateIssued, c.dateCompleted, c.reward, c.collateral, c.volume, r.cost AS fee FROM contract AS c LEFT JOIN stations AS s on c.startStationID = s.stationID LEFT JOIN stations AS e ON c.endStationId = e.stationID LEFT JOIN  routes AS r ON (c.startStationID = r.start_station AND c.endStationID = r.end_station) WHERE c.type = 'Courier' AND (c.status = 'InProgess' OR c.status = 'Pending')  ORDER BY dateIssued DESC ").fetchall()
+    contracts = db.engine.execute(
+        "SELECT c.contractID, s.stationName AS startStation, s.systemID AS startSystemID, c.startStationID, e.stationName AS endStation, c.endStationId, c.status, c.title, c.dateIssued, c.dateCompleted, c.reward, c.collateral, c.volume, r.cost AS fee FROM ship_contract AS c LEFT JOIN gen_stations AS s on c.startStationID = s.stationID LEFT JOIN gen_stations AS e ON c.endStationId = e.stationID LEFT JOIN  ship_routes AS r ON (c.startStationID = r.start_station AND c.endStationID = r.end_station) WHERE c.type = 'Courier' AND (c.status = 'InProgess' OR c.status = 'Pending')  ORDER BY dateIssued DESC ").fetchall()
 
-@app.route('/api/queue', methods=['GET','POST'])
+
+@app.route('/api/queue', methods=['GET', 'POST'])
 def display_queue():
     note = []
 
-
     if request.method == 'POST':
         # Time to do some deleting
-        statement = "DELETE FROM queue"
+        statement = "DELETE FROM gen_queue"
         db.engine.execute(statement)
 
     # Let's build the statement
-    statement = "SELECT note, tStamp FROM queue"
+    statement = "SELECT note, tStamp FROM gen_queue"
     tables = db.engine.execute(statement)
 
-
     for result in tables:
-
-        note += [ { "note": result.note,
-                   "tstamp": result.tStamp
-                          }]
+        note += [{"note": result.note,
+                  "tstamp": result.tStamp
+                 }]
     if len(note) == 0:
         abort(404)
-    return jsonify( { 'messages': note } )
-
-
+    return jsonify({'messages': note})
 
 
 @app.route('/report')
@@ -258,6 +256,7 @@ def display_report():
     #SELECT COUNT(*), SUM(reward), SUM(reward) / COUNT(*) AS avg_reward, DATE(dateCompleted) FROM contract WHERE type = 'Courier' AND status = 'Completed' GROUP BY DATE(dateCompleted)
     #SELECT AVG((strftime('%s', dateCompleted) - strftime('%s',dateIssued)) / 60 / 60) AS avg_time, MAX((strftime('%s', dateCompleted) - strftime('%s',dateIssued)) / 60 / 60 )  FROM contract WHERE type = 'Courier' AND status = 'Completed'
     return render_template('admin_reports.html')
+
 
 @app.route('/contracts')
 def display_contracts():
@@ -274,18 +273,23 @@ def display_default():
     running_average = ""
     overall_average = ""
 
-    routes = db.engine.execute("SELECT s.stationName as start, e.stationName as end, r.cost as cost FROM routes AS r JOIN stations AS s on s.stationID=r.start_station JOIN stations AS e on e.stationID = r.end_station WHERE status = 1")
+    routes = db.engine.execute(
+        "SELECT s.stationName as start, e.stationName as end, r.cost as cost FROM ship_routes AS r JOIN gen_stations AS s on s.stationID=r.start_station JOIN gen_stations AS e on e.stationID = r.end_station WHERE status = 1")
     for route in routes:
-        route_info += "<tr><td>" + route.start + "</td><td><=></td><td>" + route.end + "</td><td>=</td><td>" + str(route.cost) + "</td></tr>\n"
+        route_info += "<tr><td>" + route.start + "</td><td><=></td><td>" + route.end + "</td><td>=</td><td>" + str(
+            route.cost) + "</td></tr>\n"
 
-    running_sql = db.engine.execute("SELECT AVG((strftime('%s', dateCompleted) - strftime('%s',dateIssued)) / 60 / 60) AS return_value FROM contract WHERE type = 'Courier' AND dateCompleted BETWEEN DATETIME('now', '-5 days') AND DATETIME('now', 'localtime') AND status IS NOT 'Rejected'")
+    running_sql = db.engine.execute(
+        "SELECT AVG((strftime('%s', dateCompleted) - strftime('%s',dateIssued)) / 60 / 60) AS return_value FROM ship_contract WHERE type = 'Courier' AND dateCompleted BETWEEN DATETIME('now', '-5 days') AND DATETIME('now', 'localtime') AND status IS NOT 'Rejected'")
     for result in running_sql:
         running_average = "%.2f" % result.return_value
-    overall_sql = db.engine.execute("SELECT AVG((strftime('%s', dateCompleted) - strftime('%s',dateIssued)) / 60 / 60) AS return_value FROM contract WHERE type = 'Courier' AND status IS NOT 'Rejected'")
+    overall_sql = db.engine.execute(
+        "SELECT AVG((strftime('%s', dateCompleted) - strftime('%s',dateIssued)) / 60 / 60) AS return_value FROM ship_contract WHERE type = 'Courier' AND status IS NOT 'Rejected'")
     for oresult in overall_sql:
         overall_average = "%.2f" % oresult.return_value
 
-    return render_template('default_unauthed.html', route_info=Markup(route_info), running_average=running_average, overall_average=overall_average)
+    return render_template('default_home.html', route_info=Markup(route_info), running_average=running_average,
+                           overall_average=overall_average)
 
 
 @app.route('/signin', methods=['GET', 'POST'])
@@ -305,6 +309,7 @@ def signin():
     elif request.method == 'GET':
         return render_template('default_signin.html', form=form)
 
+
 #TODO Create /delete/route/<id> method and /disable/route
 @app.route('/routes', methods=['GET', 'POST'])
 def routes():
@@ -320,33 +325,41 @@ def routes():
     if request.method == 'POST':
         if request.form['submit'] == 'Add A Station':
             #Adding a station, station things go here
-            station = Stations(stationID=sform.station_id.data,stationName=sform.station_name.data,systemID=sform.system_id.data)
+            station = Stations(stationID=sform.station_id.data, stationName=sform.station_name.data,
+                               systemID=sform.system_id.data)
             db.session.add(station)
             db.session.commit()
             print "Adding a station id " + sform.station_id.data
         elif request.form['submit'] == 'Add Route':
-            route = Routes(start_station=rform.start_station_id.data,end_station=rform.end_station_id.data,cost=rform.cost.data,status=1)
+            route = Routes(start_station=rform.start_station_id.data, end_station=rform.end_station_id.data,
+                           cost=rform.cost.data, status=1)
             db.session.add(route)
             db.session.commit()
             print "Adding a route"
 
     # Filling out route information
-    routes = db.engine.execute("SELECT r.route_id as id, s.stationName as start, e.stationName as end, r.cost as cost, r.status as status FROM routes AS r JOIN stations AS s on s.stationID=r.start_station JOIN stations AS e on e.stationID = r.end_station WHERE status = 1")
+    routes = db.engine.execute(
+        "SELECT r.route_id as id, s.stationName as start, e.stationName as end, r.cost as cost, r.status as status FROM ship_routes AS r JOIN gen_stations AS s on s.stationID=r.start_station JOIN gen_stations AS e on e.stationID = r.end_station WHERE status = 1")
     #routes = Routes.query.all()
     for route in routes:
         if route.status == True:
             status_line = "Enabled"
         else:
             status_line = "Disabled"
-        route_content += "<tr><td>" + str(route.start) + "</td><td>" + str(route.end) + "</td><td>" + str(route.cost) + "</td><td>" + status_line + "</td><td><a href='/enable/route/" + str(route.id) + "'><img src='/static/img/enable.png' alt=\"Enable\"></a> <a href='/disable/route/" + str(route.id) + "'><img src='/static/img/disable.png' alt=\"Disable\"></a> <a href='/delete/route/" + str(route.id) + "'><img src='/static/img/remove.png' alt=\"Remove\"></a></td></tr>\n"
+        route_content += "<tr><td>" + str(route.start) + "</td><td>" + str(route.end) + "</td><td>" + str(
+            route.cost) + "</td><td>" + status_line + "</td><td><a href='/enable/route/" + str(
+            route.id) + "'><img src='/static/img/enable.png' alt=\"Enable\"></a> <a href='/disable/route/" + str(
+            route.id) + "'><img src='/static/img/disable.png' alt=\"Disable\"></a> <a href='/delete/route/" + str(
+            route.id) + "'><img src='/static/img/remove.png' alt=\"Remove\"></a></td></tr>\n"
 
     stations = Stations.query.all()
 
     for station in stations:
-        station_content += "<tr><td> " + station.stationName + "</td><td>" + str(station.stationID) + "</td><td>" + str(station.systemID) + "</td></tr>\n"
+        station_content += "<tr><td> " + station.stationName + "</td><td>" + str(station.stationID) + "</td><td>" + str(
+            station.systemID) + "</td></tr>\n"
 
-
-    return render_template('ship_routes.html', rform=rform, sform=sform, route_content=Markup(route_content), station_content=Markup(station_content))
+    return render_template('ship_routes.html', rform=rform, sform=sform, route_content=Markup(route_content),
+                           station_content=Markup(station_content))
 
 
 @app.route('/check')

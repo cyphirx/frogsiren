@@ -13,22 +13,32 @@
             <nav>
                 <ul class="menu">
                     <li><a href="{{ url_for('display_default') }}">Home</a></li>
-                    <li><a href="#">Store</a></li>
+                    <li><a href="#">Store</a>
+                        <ul class="submenu">
+                            <li><a href="#">Browse</a> </li>
+                            <li><a href="#">Shopping Cart</a></li>
+                        {%  if 'email' in session %}
+                            <li><a href="#">Item Management</a></li>
+                        {% endif %}
+                        </ul>
+                    </li>
                     {% if 'email' in session %}
 
-                        <li><a href="{{ url_for('display_contracts') }}">Contracts</a></li>
-                        <li><a href="#">Reports</a>
+                        <li><a href="#">Shipping</a>
                             <ul class="submenu">
-                                <li><a href="#">Completed</a></li>
-                                <li><a href="#">Contracts / Day</a></li>
-                            </ul>
-                        </li>
-                        <li><a href="#">Admin</a>
-                            <ul class="submenu">
+                                <li><a href="{{ url_for('display_contracts') }}">Contracts</a></li>
                                 <li><a href="{{ url_for('routes') }}">Routes</a></li>
                                 <li><a href="{{ url_for('check_contracts') }}">Check</a></li>
                             </ul>
                         </li>
+                        <li><a href="#">Admin</a>
+                            <ul class="submenu">
+                                <li><a href="#">Bulk</a></li>
+                                <li><a href="#">Orders</a></li>
+                                <li><a href="#">Something</a></li>
+                            </ul>
+                        </li>
+
                     {% else %}
                         <li><a href="{{ url_for('signin') }}">Sign in</a></li>
                     {% endif %}
