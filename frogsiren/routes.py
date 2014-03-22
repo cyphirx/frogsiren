@@ -257,19 +257,19 @@ def display_queue():
 def display_report():
     #SELECT COUNT(*), SUM(reward), SUM(reward) / COUNT(*) AS avg_reward, DATE(dateCompleted) FROM contract WHERE type = 'Courier' AND status = 'Completed' GROUP BY DATE(dateCompleted)
     #SELECT AVG((strftime('%s', dateCompleted) - strftime('%s',dateIssued)) / 60 / 60) AS avg_time, MAX((strftime('%s', dateCompleted) - strftime('%s',dateIssued)) / 60 / 60 )  FROM contract WHERE type = 'Courier' AND status = 'Completed'
-    return render_template('reports.html')
+    return render_template('admin_reports.html')
 
 @app.route('/contracts')
-def hello_world():
+def display_contracts():
     if not 'email' in session:
-        return redirect(url_for('default_display'))
+        return redirect(url_for('display_default'))
 
     template = read_contracts()
-    return render_template('contracts.html', data=Markup(template), time=cached_time)
+    return render_template('ship_contracts.html', data=Markup(template), time=cached_time)
 
 
 @app.route('/')
-def default_display():
+def display_default():
     route_info = ""
     running_average = ""
     overall_average = ""
@@ -285,7 +285,7 @@ def default_display():
     for oresult in overall_sql:
         overall_average = "%.2f" % oresult.return_value
 
-    return render_template('unauthed.html', route_info=Markup(route_info), running_average=running_average, overall_average=overall_average)
+    return render_template('default_unauthed.html', route_info=Markup(route_info), running_average=running_average, overall_average=overall_average)
 
 
 @app.route('/signin', methods=['GET', 'POST'])
@@ -293,23 +293,23 @@ def signin():
     form = SigninForm()
 
     if 'email' in session:
-        return redirect(url_for('hello_world'))
+        return redirect(url_for('display_contracts'))
 
     if request.method == 'POST':
         if form.name.data == user and form.password.data == password:
             session['email'] = form.name.data
-            return redirect(url_for('hello_world'))
+            return redirect(url_for('display_contracts'))
         else:
-            return render_template('signin.html', form=form)
+            return render_template('default_signin.html', form=form)
 
     elif request.method == 'GET':
-        return render_template('signin.html', form=form)
+        return render_template('default_signin.html', form=form)
 
 #TODO Create /delete/route/<id> method and /disable/route
 @app.route('/routes', methods=['GET', 'POST'])
 def routes():
     if not 'email' in session:
-        return redirect(url_for('hello_world'))
+        return redirect(url_for('display_contracts'))
     station_content = ""
     route_content = ""
 
@@ -346,7 +346,7 @@ def routes():
         station_content += "<tr><td> " + station.stationName + "</td><td>" + str(station.stationID) + "</td><td>" + str(station.systemID) + "</td></tr>\n"
 
 
-    return render_template('routes.html', rform=rform, sform=sform, route_content=Markup(route_content), station_content=Markup(station_content))
+    return render_template('ship_routes.html', rform=rform, sform=sform, route_content=Markup(route_content), station_content=Markup(station_content))
 
 
 @app.route('/check')

@@ -8,14 +8,15 @@
 <body>
 <header>
     <div class="container">
-        <h1 class="logo">Frogsiren Freight</h1>
+        <h1 class="logo">Frogsiren Mart and Freight</h1>
         <strong>
             <nav>
                 <ul class="menu">
-                    <li><a href="{{ url_for('default_display') }}">Home</a></li>
+                    <li><a href="{{ url_for('display_default') }}">Home</a></li>
+                    <li><a href="#">Store</a></li>
                     {% if 'email' in session %}
 
-                        <li><a href="{{ url_for('hello_world') }}">Contracts</a></li>
+                        <li><a href="{{ url_for('display_contracts') }}">Contracts</a></li>
                         <li><a href="#">Reports</a>
                             <ul class="submenu">
                                 <li><a href="#">Completed</a></li>
