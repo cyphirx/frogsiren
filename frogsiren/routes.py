@@ -201,9 +201,9 @@ def read_contracts():
         content += '    <td>' + contract.dateIssued + '</td>\n'
         content += '    <td>' + contract.dateCompleted + '</td>\n'
         content += '    <td>' + contract.status + '</td>\n'
-        content += '    <td>' + str(contract.reward) + '</td>\n'
-        content += '    <td>' + str(contract.collateral) + '</td>\n'
-        content += '    <td>' + str(contract.volume) + '</td>\n'
+        content += '    <td>' + humanize.intcomma(contract.reward) + '</td>\n'
+        content += '    <td>' + humanize.intcomma(contract.collateral) + '</td>\n'
+        content += '    <td>' + humanize.intcomma(contract.volume) + '</td>\n'
         if contract.fee > isk:
             color = "red"
         else:
