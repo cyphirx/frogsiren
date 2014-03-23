@@ -56,6 +56,40 @@ class Queue(db.Model):
     tStamp = db.Column(db.DateTime, unique=False)
 
 
+class Groups(db.Model):
+    __tablename__ = "shop_groups"
+    id = db.Column(db.Integer, unique=True, primary_key=True)
+    parent_id = db.Column(db.Integer, unique=False)
+    name = db.Column(db.Text, unique=False)
+
+
+class Fit(db.Model):
+    __tablename__ = "shop_fits"
+    id = db.Column(db.Integer, unique=True, primary_key=True)
+    gid = db.Column(db.Integer, unique=False)
+    name = db.Column(db.Text, unique=False)
+    volume = db.Column(db.Float, unique=False)
+    isk = db.Column(db.Float, unique=False)
+    added = db.Column(db.DateTime, unique=False)
+    status = db.Column(db.Boolean, unique=False)
+    img = db.Column(db.Text, unique=False)
+
+
+class Item(db.Model):
+    __tablename__ = "shop_items"
+    id = db.Column(db.Integer, unique=True, primary_key=True)
+    name = db.Column(db.Text, unique=True)
+    volume = db.Column(db.Float, unique=False)
+
+
+class FitItems(db.Model):
+    __tablename__ = "shop_fititems"
+    id = db.Column(db.Integer, unique=True, primary_key=True)
+    fit_id = db.Column(db.Integer, unique=False)
+    item_id = db.Column(db.Integer, unique=False)
+    count = db.Column(db.Integer, unique=False)
+
+
 def initial_db():
     from flask import Flask
     from sqlalchemy import exists

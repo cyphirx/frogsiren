@@ -1,21 +1,21 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Frogsiren Freight</title>
+    <title>Frogsiren Services</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 </head>
 <body>
 <header>
     <div class="container">
-        <h1 class="logo">Frogsiren Mart and Freight</h1>
+        <h1 class="logo">Frogsiren Services</h1>
         <strong>
             <nav>
                 <ul class="menu">
                     <li><a href="{{ url_for('display_default') }}">Home</a></li>
                     <li><a href="#">Store</a>
                         <ul class="submenu">
-                            <li><a href="#">Browse</a> </li>
+                            <li><a href="{{ url_for('display_shop') }}">Browse</a> </li>
                             <li><a href="#">Shopping Cart</a></li>
                         {%  if 'email' in session %}
                             <li><a href="#">Item Management</a></li>
@@ -27,7 +27,7 @@
                         <li><a href="#">Shipping</a>
                             <ul class="submenu">
                                 <li><a href="{{ url_for('display_contracts') }}">Contracts</a></li>
-                                <li><a href="{{ url_for('routes') }}">Routes</a></li>
+                                <li><a href="{{ url_for('display_routes') }}">Routes</a></li>
                                 <li><a href="{{ url_for('check_contracts') }}">Check</a></li>
                             </ul>
                         </li>

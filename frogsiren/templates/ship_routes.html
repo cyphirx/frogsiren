@@ -15,7 +15,7 @@
     </table>
 
   <h2>Add a route</h2>
-  <form action="{{ url_for('routes') }}" method=post>
+  <form action="{{ url_for('display_routes') }}" method=post>
       <table>
           <tr><td>End StationID</td><td>End StationID</td><td>Cost</td></tr>
           <tr><td> {{ rform.start_station_id }} </td><td> {{ rform.end_station_id }} </td><td> {{ rform.cost }} </td></tr>
@@ -25,7 +25,7 @@
   </form>
 
   <h2>Add a station</h2>
-  <form action="{{ url_for('routes') }}" method=post>
+  <form action="{{ url_for('display_routes') }}" method=post>
       <table>
           <tr><td>StationID</td><td>Station Name</td><td>SystemID</td></tr>
           <tr><td>{{ sform.station_id }}</td><td>{{ sform.station_name }}</td><td>{{ sform.system_id }}</td></tr>

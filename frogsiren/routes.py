@@ -1,5 +1,8 @@
+# -*- coding: utf-8 -*-
+
 import datetime
 from time import strptime
+
 
 from sqlalchemy import and_, or_
 from frogsiren import app
@@ -155,7 +158,7 @@ def read_contracts():
     content = ""
     #TODO Need to look into pagination here
     contracts = db.engine.execute(
-        "SELECT c.contractID, s.stationName AS startStation, s.systemID AS startSystemID, c.startStationID, e.stationName AS endStation, c.endStationId, c.status, c.title, c.dateIssued, c.dateCompleted, c.reward, c.collateral, c.volume, r.cost AS fee FROM ship_contract AS c LEFT JOIN gen_stations AS s on c.startStationID = s.stationID LEFT JOIN gen_stations AS e ON c.endStationId = e.stationID LEFT JOIN  ship_routes AS r ON (c.startStationID = r.start_station AND c.endStationID = r.end_station) WHERE c.type = 'Courier' ORDER BY dateIssued DESC ").fetchall()
+        "SELECT c.contractID, s.stationName AS startStation, s.systemID AS startSystemID, c.startStationID, e.stationName AS endStation, c.endStationId, c.status, c.title, c.dateIssued, c.dateCompleted, c.reward, c.collateral, c.volume, r.cost AS fee FROM ship_contract AS c LEFT JOIN gen_stations AS s on c.startStationID = s.stationID LEFT JOIN gen_stations AS e ON c.endStationId = e.stationID LEFT JOIN  ship_routes AS r ON ((c.startStationID = r.start_station OR c.endStationID = r.start_station) AND (c.endStationID = r.end_station or c.startStationID = r.end_station)) WHERE c.type = 'Courier' ORDER BY dateIssued DESC LIMIT 25").fetchall()
 
     for contract in contracts:
 
@@ -203,10 +206,11 @@ def read_contracts():
         content += '    <td>' + humanize.intcomma(contract.reward) + '</td>\n'
         content += '    <td>' + humanize.intcomma(contract.collateral) + '</td>\n'
         content += '    <td>' + humanize.intcomma(contract.volume) + '</td>\n'
-        if contract.fee > isk:
-            color = "red"
-        else:
+
+        if contract.fee <= isk:
             color = "green"
+        else:
+            color = "red"
 
         content += '    <td style="background-color:' + color + '">' + str(isk) + '</td>\n'
         content += '</tr>'
@@ -228,7 +232,7 @@ def api_inprogress():
     contracts = db.engine.execute(
         "SELECT c.contractID, s.stationName AS startStation, s.systemID AS startSystemID, c.startStationID, e.stationName AS endStation, c.endStationId, c.status, c.title, c.dateIssued, c.dateCompleted, c.reward, c.collateral, c.volume, r.cost AS fee FROM ship_contract AS c LEFT JOIN gen_stations AS s on c.startStationID = s.stationID LEFT JOIN gen_stations AS e ON c.endStationId = e.stationID LEFT JOIN  ship_routes AS r ON (c.startStationID = r.start_station AND c.endStationID = r.end_station) WHERE c.type = 'Courier' AND (c.status = 'InProgess' OR c.status = 'Pending')  ORDER BY dateIssued DESC ").fetchall()
 
-
+#TODO build message queue management into app(primarily for message removal if needed)
 @app.route('/api/queue', methods=['GET', 'POST'])
 def display_queue():
     note = []
@@ -292,6 +296,13 @@ def display_default():
                            overall_average=overall_average)
 
 
+@app.route('/shop')
+def display_shop():
+    # Render grouping bar
+
+
+    return render_template('shop_main.html')
+
 @app.route('/signin', methods=['GET', 'POST'])
 def signin():
     form = SigninForm()
@@ -312,7 +323,7 @@ def signin():
 
 #TODO Create /delete/route/<id> method and /disable/route
 @app.route('/routes', methods=['GET', 'POST'])
-def routes():
+def display_routes():
     if not 'email' in session:
         return redirect(url_for('display_contracts'))
     station_content = ""
@@ -340,7 +351,7 @@ def routes():
     # Filling out route information
     routes = db.engine.execute(
         "SELECT r.route_id as id, s.stationName as start, e.stationName as end, r.cost as cost, r.status as status FROM ship_routes AS r JOIN gen_stations AS s on s.stationID=r.start_station JOIN gen_stations AS e on e.stationID = r.end_station WHERE status = 1")
-    #routes = Routes.query.all()
+    #display_routes = Routes.query.all()
     for route in routes:
         if route.status == True:
             status_line = "Enabled"
