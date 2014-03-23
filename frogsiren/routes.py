@@ -153,7 +153,7 @@ def read_contracts():
     active_reward = 0
     content = ""
 
-    contracts = db.engine.execute("SELECT c.contractID, s.stationName AS startStation, s.systemID AS startSystemID, c.startStationID, e.stationName AS endStation, c.endStationId, c.status, c.title, c.dateIssued, c.dateCompleted, c.reward, c.collateral, c.volume, r.cost AS fee FROM contract AS c LEFT JOIN stations AS s on c.startStationID = s.stationID LEFT JOIN stations AS e ON c.endStationId = e.stationID LEFT JOIN  routes AS r ON (c.startStationID = r.start_station AND c.endStationID = r.end_station) WHERE c.type = 'Courier' ORDER BY dateIssued DESC ").fetchall()
+    contracts = db.engine.execute("SELECT c.contractID, s.stationName AS startStation, s.systemID AS startSystemID, c.startStationID, e.stationName AS endStation, c.endStationId, c.status, c.title, c.dateIssued, c.dateCompleted, c.reward, c.collateral, c.volume, r.cost AS fee FROM contract AS c LEFT JOIN stations AS s on c.startStationID = s.stationID LEFT JOIN stations AS e ON c.endStationId = e.stationID LEFT JOIN  routes AS r ON ((c.startStationID = r.start_station OR c.endStationId = r.start_station) AND (c.endStationID = r.end_station OR c.startStationID = r.end_station ) ) WHERE c.type = 'Courier' ORDER BY dateIssued DESC ").fetchall()
 
     for contract in contracts:
 
