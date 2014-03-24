@@ -232,6 +232,7 @@ def api_inprogress():
     contracts = db.engine.execute(
         "SELECT c.contractID, s.stationName AS startStation, s.systemID AS startSystemID, c.startStationID, e.stationName AS endStation, c.endStationId, c.status, c.title, c.dateIssued, c.dateCompleted, c.reward, c.collateral, c.volume, r.cost AS fee FROM ship_contract AS c LEFT JOIN gen_stations AS s on c.startStationID = s.stationID LEFT JOIN gen_stations AS e ON c.endStationId = e.stationID LEFT JOIN  ship_routes AS r ON (c.startStationID = r.start_station AND c.endStationID = r.end_station) WHERE c.type = 'Courier' AND (c.status = 'InProgess' OR c.status = 'Pending')  ORDER BY dateIssued DESC ").fetchall()
 
+
 #TODO build message queue management into app(primarily for message removal if needed)
 @app.route('/api/queue', methods=['GET', 'POST'])
 def display_queue():
