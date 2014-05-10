@@ -6,14 +6,6 @@
         <thead><th>Start</th><th>End</th><th>Cost</th><th>Status</th><th>Functions</th></thead>
         {{ route_content }}
     </table>
-
-
-    <h2>Stations</h2>
-    <table>
-        <thead><th>Station Name</th><th>StationID</th><th>SystemID</th></thead>
-        {{ station_content }}
-    </table>
-
   <h2>Add a route</h2>
   <form action="{{ url_for('routes') }}" method=post>
       <table>
@@ -23,6 +15,14 @@
       {{ rform.submit }}
 
   </form>
+
+    <h2>Stations</h2>
+    <table>
+        <thead><th>Station Name</th><th>StationID</th><th>SystemID</th></thead>
+        {{ station_content }}
+    </table>
+
+
 
   <h2>Add a station</h2>
   <form action="{{ url_for('routes') }}" method=post>
