@@ -306,6 +306,13 @@ def signin():
         return render_template('signin.html', form=form)
 
 #TODO Create /delete/route/<id> method and /disable/route
+@app.route('/delete/route/<id>', methods=['GET', 'POST'])
+def del_route(id):
+    statement = "DELETE FROM routes WHERE route_id = " + id
+    db.engine.execute(statement)
+    return "Deleted"
+
+
 @app.route('/routes', methods=['GET', 'POST'])
 def routes():
     if not 'email' in session:
