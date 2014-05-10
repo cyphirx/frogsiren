@@ -204,10 +204,13 @@ def read_contracts():
         content += '    <td>' + humanize.intcomma(contract.reward) + '</td>\n'
         content += '    <td>' + humanize.intcomma(contract.collateral) + '</td>\n'
         content += '    <td>' + humanize.intcomma(contract.volume) + '</td>\n'
+
         if contract.fee > isk:
             color = "red"
-        else:
+        elif isk >= contract.fee > 0:
             color = "green"
+        else:
+            color = "yellow"
 
         content += '    <td style="background-color:' + color + '">' + str(isk) + '</td>\n'
         content += '</tr>'
@@ -338,7 +341,7 @@ def routes():
             print "Adding a route"
 
     # Filling out route information
-    routes = db.engine.execute("SELECT r.route_id as id, s.stationName as start, e.stationName as end, r.cost as cost, r.status as status FROM routes AS r JOIN stations AS s on s.stationID=r.start_station JOIN stations AS e on e.stationID = r.end_station WHERE status = 1")
+    routes = db.engine.execute("SELECT r.route_id as id, s.stationName as start, e.stationName as end, r.cost as cost, r.status as status FROM routes AS r JOIN stations AS s on s.stationID=r.start_station JOIN stations AS e on e.stationID = r.end_station WHERE status = 1 ORDER BY s.stationName")
     #routes = Routes.query.all()
     for route in routes:
         if route.status == True:
