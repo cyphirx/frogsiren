@@ -187,7 +187,7 @@ def read_contracts():
         if contract.fee > isk:
             reward_color = "red"
         elif isk >= contract.fee > 0:
-            reward_color = "green"
+            reward_color = "none"
         else:
             reward_color = "yellow"
 
