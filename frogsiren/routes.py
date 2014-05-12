@@ -115,7 +115,6 @@ def retrieve_contracts():
                                 availability=availability, dateIssued=dateIssued, dateExpired=dateExpired,
                                 dateAccepted=dateAccepted, numDays=numDays, dateCompleted=dateCompleted, price=price,
                                 reward=reward, collateral=collateral, buyout=buyout, volume=volume, cached=cached)
-            #TODO Add trigger here for contractbot
             if type == "Courier":
                 station = Stations.query.filter_by(stationID=startStationID).first()
                 if station:
@@ -158,9 +157,6 @@ def read_contracts():
     for contract in contracts:
 
         # Start working towards display
-        total_volume += contract.volume
-        total_collateral += contract.collateral
-        total_reward += contract.reward
         isk = round(contract.reward / contract.volume, 2)
         if type == "ItemExchange":
             continue
@@ -171,13 +167,43 @@ def read_contracts():
 
         if contract.status == "InProgress":
             count_progress += 1
+            total_reward += contract.reward
+            total_collateral += contract.collateral
+            total_volume += contract.volume
 
         if contract.status == "Outstanding":
             count_pending += 1
+            total_reward += contract.reward
+            total_collateral += contract.collateral
+            total_volume += contract.volume
 
+        # Colorize weird route
+        # Colorize volume
+        if contract.volume > 320000:
+            vol_color = "red"
+        else:
+            vol_color = "none"
+        # Colorize incorrect reward
+        if contract.fee > isk:
+            reward_color = "red"
+        elif isk >= contract.fee > 0:
+            reward_color = "green"
+        else:
+            reward_color = "yellow"
 
-        #TODO Add check on if price is set, volume is higher then max, isk/m3 lower then min, high collateral, not in correct station
+        # Colorize incorrect collat
+        collat_color = "none"
+        if contract.collateral > 0:
+            if contract.fee:
+                if contract.fee * contract.volume + contract.collateral * .05 >= contract.reward:
+                    collat_color = "red"
+            else:
+                collat_color = "yellow"
+
+        # Start building a row
         content += '<tr class="' + contract.status + '">\n'
+
+
 
         if contract.startStation:
             javascript = '    <td><a href="#" onclick="CCPEVE.showContract(' + str(
@@ -187,12 +213,12 @@ def read_contracts():
             content += '    <td>' + contract.startStation.split(' ')[0] + '</td>\n'
         else:
             content += '    <td>' + str(contract.contractID) + '</a></td>\n'
-            content += '    <td>UNKNOWN ID ( ' + str(contract.startStationID) + ' )</td>\n'
+            content += '    <td color="red">UNKNOWN ID ( ' + str(contract.startStationID) + ' )</td>\n'
 
         if contract.endStation:
             content += '    <td>' + contract.endStation.split(' ')[0] + '</td>\n'
         else:
-            content += '    <td>UNKNOWN ID ( ' + str(contract.endStationID) + ' )</td>\n'
+            content += '    <td color="red">UNKNOWN ID ( ' + str(contract.endStationID) + ' )</td>\n'
 
 
 
@@ -201,26 +227,25 @@ def read_contracts():
         content += '    <td>' + contract.dateIssued + '</td>\n'
         content += '    <td>' + contract.dateCompleted + '</td>\n'
         content += '    <td>' + contract.status + '</td>\n'
-        content += '    <td>' + humanize.intcomma(contract.reward) + '</td>\n'
-        content += '    <td>' + humanize.intcomma(contract.collateral) + '</td>\n'
-        content += '    <td>' + humanize.intcomma(contract.volume) + '</td>\n'
+        content += '    <td style="background-color:' + reward_color + '">' + humanize.intcomma(contract.reward) + '</td>\n'
+        content += '    <td style="background-color:' + collat_color + '">' + humanize.intcomma(contract.collateral) + '</td>\n'
+        content += '    <td style="background-color:' + vol_color + '">' + humanize.intcomma(contract.volume) + '</td>\n'
 
-        if contract.fee > isk:
-            color = "red"
-        elif isk >= contract.fee > 0:
-            color = "green"
-        else:
-            color = "yellow"
 
-        content += '    <td style="background-color:' + color + '">' + str(isk) + '</td>\n'
+
+        content += '    <td style="background-color:' + reward_color + '">' + str(isk) + '</td>\n'
         content += '</tr>'
 
-    content += '<tfoot><td>Outstanding</td><td style="text-align: center"><b>' + str(count_pending) + '</b></td><td colspan=5 style="text-align: right">Total</td><td>' + humanize.intcomma(
+    # Build SQL queries to count item totals, total value hauled, total isk hauled
+    # SELECT COUNT(*), status FROM contract WHERE type = 'Courier' GROUP BY status
+    # SELECT SUM(reward), SUM(volume) FROM contract WHERE type = 'Courier' AND status = 'Completed'
+
+    content += '<tfoot><td colspan=7 style="text-align: right">Total</td><td>' + humanize.intcomma(
         total_reward) + '</td><td>' + humanize.intcomma(total_collateral) + '</td><td>' + humanize.intcomma(
         total_volume) + '</td><td>&nbsp;</td></tfoot>\n'
-    content += '<tfoot><td>Inprogress</td><td style="text-align: center"><b>' + str(count_progress) + '</b></td><td colspan=5 style="text-align: right">Unaccepted/In Progress</td><td>' + humanize.intcomma(
-        active_reward) + '</td><td>' + humanize.intcomma(active_collateral) + '</td><td>' + humanize.intcomma(
-        active_volume) + '</td><td>&nbsp;</td></tfoot>\n'
+
+
+
 
     return content
 
@@ -267,8 +292,19 @@ def hello_world():
     if not 'email' in session:
         return redirect(url_for('default_display'))
 
+    sql = "SELECT COUNT(*) AS total, status FROM contract WHERE type = 'Courier' GROUP BY status ORDER BY status"
+    statuses = db.engine.execute(sql).fetchall()
+    content = 'Contract Totals<br />\n<table>\n<tr>'
+    for status in statuses:
+        content += '<td width="75">' + status.status + '</td><td width="25" style="text-align: center"><b>' + str(status.total) + '</b></td>\n'
+    sql = "SELECT SUM(reward) AS reward, SUM(collateral) AS collat, SUM(volume) AS volume FROM contract WHERE type = 'Courier' AND status = 'Completed'"
+    totals = db.engine.execute(sql).first()
+
+    content += ""
+    content += '</tr>\n</table>\n'
+
     template = read_contracts()
-    return render_template('contracts.html', data=Markup(template), time=cached_time)
+    return render_template('contracts.html', data=Markup(template), summary = Markup(content), time=cached_time)
 
 
 @app.route('/')
