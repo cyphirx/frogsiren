@@ -1,0 +1,65 @@
+{% extends "layout.html" %}
+ 
+{% block content %}
+  <h2>Player Info</h2>
+    {% if player_data is defined %}
+        <table border="0" cellpadding="3" cellspacing="3" style="border-bottom: 1px solid black;">
+            <td><img src="http://image.eveonline.com/Character/{{ player_data.characterID}}_128.jpg"></td>
+            <td>
+                <table border="0" cellpadding="3" cellspacing="3">
+                    <td>Name</td>
+                    <td>{{ player_data.characterName }}</td>
+                    <tr>
+                        <td>Corp</td>
+                        <td>{{ player_data.corporationName }}</td>
+                    </tr>
+                    <tr>
+                        <td>Alliance</td>
+                        <td>{{ player_data.allianceName }}</td>
+                    </tr>
+                    <tr>
+                        <td>Date Added</td>
+                        <td>{{ player_data.dateAdded }}</td>
+                    </tr>
+                </table>
+            </td>
+        </table>
+        <table>
+         <th colspan="2">Summarized Data</th>
+        <tr>
+            <th>Reward</th>
+            <td>{{ summary.reward }}</td>
+        </tr>
+        <tr>
+            <th>Collateral</th>
+            <td>{{ summary.collateral }}</td>
+        </tr>
+        <tr>
+            <th>Volume</th>
+            <td>{{ summary.volume }}</td>
+        </tr>
+        <tr>
+            <th>Contracts</th>
+            <td>{{ summary.count }}</td>
+        </tr>
+        </table>
+        <h3>Issued Courier Contracts</h3>
+        <table border="1" cellpadding="3" cellspacing="3">
+        <tr>
+            <th>Start</th>
+            <th>End</th>
+            <th>Reward</th>
+            <th>Collateral</th>
+            <th>Volume</th>
+            <th>Issued</th>
+            <th>Completed</th>
+            <th>Status</th>
+            </tr>
+       {{ contracts }}
+        </table>
+
+    {% else %}
+        <h3>No character with that name found!</h3>
+    {% endif %}
+
+{% endblock %}
