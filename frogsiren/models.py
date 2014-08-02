@@ -20,6 +20,17 @@ class Routes(db.Model):
     status = db.Column(db.Boolean, unique=False)
 
 
+class Player(db.Model):
+    characterID = db.Column(db.Integer, primary_key=True)
+    characterName = db.Column(db.Text)
+    corporationID = db.Column(db.Integer)
+    corporationName = db.Column(db.Text)
+    allianceID = db.Column(db.Integer)
+    allianceName = db.Column(db.Text)
+    dateAdded = db.Column(db.Text)
+    dateUpdated = db.Column(db.Text)
+
+
 class Contract(db.Model):
     contractID = db.Column(db.BigInteger, unique=True, primary_key=True)
     issuerID = db.Column(db.BigInteger, unique=False)
@@ -61,25 +72,14 @@ def initial_db():
     db.init_app(app)
     with app.test_request_context():
         db.create_all(app=app)
-        if not db.session.query(exists().where(Stations.stationID == 60003478)).scalar():
-            station = Stations(stationID=60003478, systemID=30005055,
-                               stationName="Zinkon VII - Moon 1 - Caldari Business Tribunal Accounting")
-            db.session.add(station)
         if not db.session.query(exists().where(Stations.stationID == 60003760)).scalar():
             station = Stations(stationID=60003760, systemID=30000142,
                                stationName="Jita IV - Moon 4 - Caldari Navy Assembly Plant")
-            db.session.add(station)
-        if not db.session.query(exists().where(Stations.stationID == 60013159)).scalar():
-            station = Stations(stationID=60013159, systemID=30004299,
-                               stationName="Sakht VI - Moon 7 - Genolution Biotech Production")
             db.session.add(station)
         if not db.session.query(exists().where(Stations.stationID == 60008494)).scalar():
             station = Stations(stationID=60008494, systemID=30002187,
                                stationName="Amarr VIII (Oris) - Emperor Family Academy")
             db.session.add(station)
-        if not db.session.query(exists().where(and_(Routes.start_station == 60003478, Routes.end_station == 60003760))).scalar():
-            route = Routes(start_station=60003478, end_station=60003760, cost=330, status=0)
-            db.session.add(route)
         db.session.commit()
 
 
