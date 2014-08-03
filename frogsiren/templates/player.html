@@ -1,6 +1,17 @@
 {% extends "layout.html" %}
  
 {% block content %}
+<script src="/static/js/jquery-latest.js"></script>
+<script src="/static/js/jquery.tablesorter.js"></script>
+<script type="text/javascript">
+$(document).ready(function()
+    {
+        $("#abc").tablesorter();
+    }
+);
+
+</script>
+
   <h2>Player Info</h2>
     {% if player_data is defined %}
         <table border="0" cellpadding="3" cellspacing="3" style="border-bottom: 1px solid black;">
@@ -44,8 +55,8 @@
         </tr>
         </table>
         <h3>Issued Courier Contracts</h3>
-        <table border="1" cellpadding="3" cellspacing="3">
-        <tr>
+        <table border="1" cellpadding="3" cellspacing="3" id="abc" class="tablesorter">
+        <thead>
             <th>Start</th>
             <th>End</th>
             <th>Reward</th>
@@ -54,7 +65,7 @@
             <th>Issued</th>
             <th>Completed</th>
             <th>Status</th>
-            </tr>
+        </thead>
        {{ contracts }}
         </table>
 
