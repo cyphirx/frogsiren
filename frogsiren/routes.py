@@ -9,9 +9,9 @@ import urllib2
 import xml.etree.ElementTree as ET
 import os
 import humanize
-from frogsiren.forms import SigninForm, RoutesForm, StationForm
+from frogsiren.forms import SigninForm, RoutesForm, StationForm, NoteForm
 
-from models import db, Stations, Contract, initial_db, Routes, Queue, Player
+from models import db, Stations, Contract, initial_db, Routes, Queue, Player, PlayerNotes
 from flask import render_template, Markup, session, redirect, url_for, request, jsonify, abort
 
 from ConfigParser import ConfigParser
@@ -261,8 +261,12 @@ def read_contracts():
                 title += "Total Collat: " + humanize.intcomma(player.collat) + "&#013;"
                 title += "Total Volume: " + humanize.intcomma(player.volume) + "&#013;"
                 title += "Courier Contracts: " + str(player.total)
-
-            content += '    <td title="' + title + '"><a href="player/'+ str(contract.issuerID) +'">' + contract.issuer + '</a></td>\n'
+            note = db.session.query(PlayerNotes).filter(PlayerNotes.characterID==contract.issuerID).first()
+            if note:
+                noteVal = "*"
+            else:
+                noteVal = ""
+            content += '    <td title="' + title + '"><a href="player/'+ str(contract.issuerID) +'">' + contract.issuer + noteVal + '</a></td>\n'
         else:
             content += '    <td>Issuer unknown!</td>\n'
         content += '    <td>' + contract.status + '</td>\n'
@@ -420,12 +424,19 @@ def check_players():
     db.session.commit()
     return "Oh my!"
 
-@app.route('/player/<int:id>')
+@app.route('/player/<int:id>', methods=['GET','POST'])
 def display_player(id):
     if 'email' not in session:
         return redirect(url_for('default_display'))
     player = db.session.query(Player).filter( Player.characterID == id).first()
     if player:
+        noteForm = NoteForm()
+        if request.method == "POST":
+            note = PlayerNotes(characterID=player.characterID,note=noteForm.note.data,addedBy=session['email'],dateAdded=cached_time,status=1)
+            db.session.add(note)
+            db.session.commit()
+        # Build up notes list
+        notes = db.session.query(PlayerNotes).filter(PlayerNotes.characterID==id).all()
         # Build summary
         sql = "SELECT characterName, SUM(reward) AS reward, SUM(collateral) AS collateral, SUM(volume) AS volume, COUNT(*) AS count FROM contract LEFT JOIN player ON contract.issuerID = player.characterID WHERE issuerID = " + str(id) + " GROUP BY issuerID"
         summary = db.session.execute(sql).first()
@@ -447,7 +458,7 @@ def display_player(id):
             statement += "  <td>" + contract.status + "</td>\n"
             statement += "</tr>\n"
 
-        return render_template('player.html', player_data=player, contracts=Markup(statement), summary=summary)
+        return render_template('player.html', player_data=player, notes=notes, noteForm=noteForm, contracts=Markup(statement), summary=summary)
     else:
         return render_template('player.html')
 

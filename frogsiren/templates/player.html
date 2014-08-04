@@ -11,7 +11,8 @@ $(document).ready(function()
 );
 
 </script>
-
+<div>
+<div style="float: left">
   <h2>Player Info</h2>
     {% if player_data is defined %}
         <table border="0" cellpadding="3" cellspacing="3" style="border-bottom: 1px solid black;">
@@ -68,6 +69,22 @@ $(document).ready(function()
         </thead>
        {{ contracts }}
         </table>
+</div>
+        <div style="float: right; text-align: left; width: 20%">
+            <h2>Notes</h2>
+            <form action="{{ player_data.characterID }}" method=post>
+            {{ noteForm.hidden_tag() }}
+            {{ noteForm.note }}
+            {{ noteForm.submit }}
+            </form>
+            <h3>Current Notes</h3>
+            {% for note in notes %}
+                <div style="border-bottom: 1px solid lightgray">
+                {{ note.note }} <br />
+                 - <i style="font-size: 75%">{{ note.dateAdded }} by {{ note.addedBy }} </i>
+                </div>
+            {% endfor %}
+            </div>
 
     {% else %}
         <h3>No character with that name found!</h3>

@@ -20,6 +20,15 @@ class Routes(db.Model):
     status = db.Column(db.Boolean, unique=False)
 
 
+class PlayerNotes(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    characterID = db.Column(db.Integer)
+    note = db.Column(db.Text)
+    dateAdded = db.Column(db.Text)
+    addedBy = db.Column(db.Text)
+    status = db.Column(db.Boolean)
+
+
 class Player(db.Model):
     characterID = db.Column(db.Integer, primary_key=True)
     characterName = db.Column(db.Text)
