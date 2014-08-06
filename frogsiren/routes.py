@@ -1,20 +1,17 @@
 import datetime
 import json
-import pprint
-from time import strptime
-
-from sqlalchemy import and_, or_
-from frogsiren import app
 import urllib2
 import xml.etree.ElementTree as ET
 import os
-import humanize
-from frogsiren.forms import SigninForm, RoutesForm, StationForm, NoteForm
+from ConfigParser import ConfigParser
 
-from models import db, Stations, Contract, initial_db, Routes, Queue, Player, PlayerNotes
+import humanize
 from flask import render_template, Markup, session, redirect, url_for, request, jsonify, abort
 
-from ConfigParser import ConfigParser
+
+from frogsiren import app
+from frogsiren.forms import SigninForm, RoutesForm, StationForm, NoteForm
+from models import db, Stations, Contract, initial_db, Routes, Queue, Player, PlayerNotes
 
 
 def ConfigSectionMap(section):
@@ -252,7 +249,7 @@ def read_contracts():
         content += '    <td>' + contract.title + '</td>\n'
         content += '    <td>' + contract.dateIssued + '</td>\n'
         if contract.issuer:
-            query = "SELECT p.characterName, SUM(c.reward) AS reward, SUM(c.collateral) AS collat, SUM(c.volume) AS volume, COUNT(*) AS total FROM contract AS c LEFT JOIN player AS p ON c.issuerID == p.characterID WHERE c.type == 'Courier' AND p.characterName LIKE '" + contract.issuer + "%' GROUP BY c.issuerID LIMIT 1"
+            query = 'SELECT p.characterName, SUM(c.reward) AS reward, SUM(c.collateral) AS collat, SUM(c.volume) AS volume, COUNT(*) AS total FROM contract AS c LEFT JOIN player AS p ON c.issuerID == p.characterID WHERE c.type == "Courier" AND p.characterName LIKE "' + contract.issuer + '%" GROUP BY c.issuerID LIMIT 1'
             players = db.engine.execute(query)
 
             for player in players:
