@@ -206,6 +206,7 @@ def read_contracts():
         # Colorize incorrect reward
         if contract.fee > isk:
             reward_color = "red"
+            reward_title = "Isk/m3 is low"
         elif isk >= contract.fee > 0:
             reward_color = "none"
         else:
