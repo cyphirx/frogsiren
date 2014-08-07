@@ -212,7 +212,7 @@ def read_contracts():
             reward_color = "yellow"
             reward_title = "Unknown route"
 
-        if contract.reward < rewardMin:
+        if contract.fee >= rewardMin:
             reward_color = "red"
             reward_title = "Low Reward"
 
