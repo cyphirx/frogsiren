@@ -223,7 +223,7 @@ def read_contracts():
         if contract.collateral > 0:
             if contract.fee:
                 calcReward = contract.fee * contract.volume + contract.collateral * .05
-                if calcReward >= contract.reward:
+                if calcReward > contract.reward:
                     collat_color = "red"
                     collat_title = "Reward should be: " + humanize.intcomma(calcReward)
             else:
