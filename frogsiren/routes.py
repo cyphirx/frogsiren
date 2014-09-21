@@ -464,8 +464,6 @@ def display_player(id):
 
 @app.route('/contracts')
 def hello_world():
-    pprint(request.args)
-    #print request.args['id']
     if not 'email' in session:
         if request.args.get('id', None) == htpassword:
             pass
