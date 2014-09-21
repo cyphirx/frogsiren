@@ -1,5 +1,6 @@
 import datetime
 import json
+from pprint import pprint
 import urllib2
 import xml.etree.ElementTree as ET
 import os
@@ -50,6 +51,7 @@ if os.path.isfile('settings.ini'):
     # stopgap until we can get connected to Auth
     user = ConfigSectionMap("users")['user']
     password = ConfigSectionMap("users")['password']
+    htpassword = ConfigSectionMap("users")['htpassword']
 
 else:
     keyID = os.environ['eve_api_keyid']
@@ -462,8 +464,13 @@ def display_player(id):
 
 @app.route('/contracts')
 def hello_world():
+    pprint(request.args)
+    #print request.args['id']
     if not 'email' in session:
-        return redirect(url_for('default_display'))
+        if request.args.get('id', None) == htpassword:
+            pass
+        else:
+            return redirect(url_for('default_display'))
 
     sql = "SELECT COUNT(*) AS total, status FROM contract WHERE type = 'Courier' GROUP BY status ORDER BY status"
     statuses = db.engine.execute(sql).fetchall()
