@@ -80,6 +80,8 @@ def retrieve_contracts():
         return "Error retrieving character ids url"
     contract_tree = ET.parse(f)
     contract_root = contract_tree.getroot()
+
+    # Set starter values
     ids = "93746362"
     i = 0
 
@@ -252,6 +254,7 @@ def read_contracts():
         content += '    <td>' + contract.title + '</td>\n'
         content += '    <td>' + contract.dateIssued + '</td>\n'
         if contract.issuer:
+            #TODO Correct logic here and set up escape sequence
             query = 'SELECT p.characterName, SUM(c.reward) AS reward, SUM(c.collateral) AS collat, SUM(c.volume) AS volume, COUNT(*) AS total FROM contract AS c LEFT JOIN player AS p ON c.issuerID == p.characterID WHERE c.type == "Courier" AND p.characterName LIKE "' + contract.issuer + '%" GROUP BY c.issuerID LIMIT 1'
             players = db.engine.execute(query)
 
