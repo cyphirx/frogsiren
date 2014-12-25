@@ -1,18 +1,17 @@
 import datetime
 import json
 from pprint import pprint
-import urllib2
+import urllib3 as urllib2
 import xml.etree.ElementTree as ET
 import os
-from ConfigParser import ConfigParser
+from configparser import ConfigParser
 
 import humanize
 from flask import render_template, Markup, session, redirect, url_for, request, jsonify, abort
 
-
 from frogsiren import app
 from frogsiren.forms import SigninForm, RoutesForm, StationForm, NoteForm
-from models import db, Stations, Contract, initial_db, Routes, Queue, Player, PlayerNotes
+import frogsiren.models
 
 
 def ConfigSectionMap(section):
@@ -36,7 +35,7 @@ cached_time = ""
 # Minimum required for reward, should be settable variable in-app
 rewardMin = 10000000
 
-initial_db()
+frogsiren.models.initial_db()
 
 if os.path.isfile('settings.ini'):
     keyID = ConfigSectionMap("api")['keyid']
@@ -70,13 +69,13 @@ else:
 def retrieve_contracts():
     global cached_time
 
-    print "Retrieving contracts"
+    print("Retrieving contracts")
     url = apiURL + "/corp/Contracts.xml.aspx?keyID=" + keyID + "&vCode=" + vCode
     request_api = urllib2.Request(url, headers={"Accept": "application/xml"})
     try:
         f = urllib2.urlopen(request_api)
     except:
-        print url
+        print(url)
         return "Error retrieving character ids url"
     contract_tree = ET.parse(f)
     contract_root = contract_tree.getroot()
@@ -116,9 +115,9 @@ def retrieve_contracts():
         cached = current_time
 
         # Let's check if the record exists in the db
-        if not Contract.query.filter_by(contractID=contractID).scalar():
-            print "Inserting new record! " + type.title() + "Contract " + str(contractID)
-            contract = Contract(contractID=contractID, issuerID=issuerID, issuerCorpID=issuerCorpID,
+        if not frogsiren.models.Contract.query.filter_by(contractID=contractID).scalar():
+            print("Inserting new record! " + type.title() + "Contract " + str(contractID))
+            contract = frogsiren.models.Contract(contractID=contractID, issuerID=issuerID, issuerCorpID=issuerCorpID,
                                 assigneeID=assigneeID, acceptorID=acceptorID, startStationID=startStationID,
                                 endStationID=endStationID, type=type, status=status, title=title, forCorp=forCorp,
                                 availability=availability, dateIssued=dateIssued, dateExpired=dateExpired,
@@ -126,11 +125,11 @@ def retrieve_contracts():
                                 reward=reward, collateral=collateral, buyout=buyout, volume=volume, cached=cached)
             if type == "Courier":
                 # Look up issuer internally and hit API if unknown
-                player = Player.query.filter_by(characterID=issuerID).all()
+                player = frogsiren.models.Player.query.filter_by(characterID=issuerID).all()
                 if len(player) < 1:
                     i += 1
 
-                station = Stations.query.filter_by(stationID=startStationID).first()
+                station = frogsiren.models.Stations.query.filter_by(stationID=startStationID).first()
                 if station:
                     stationName = station.stationName
                 else:
@@ -138,14 +137,14 @@ def retrieve_contracts():
                 message = "WOOP WOOP! New contract! From: " + stationName.split(' ')[
                     0] + " Reward: " + humanize.intcomma(reward) + "isk Collateral: " + humanize.intcomma(
                     collateral) + " Volume:" + humanize.intcomma(volume) + "m3 Note: " + title
-                queue = Queue(note=message, tStamp=datetime.datetime.now())
-                db.session.add(queue)
-            db.session.add(contract)
+                queue = frogsiren.models.Queue(note=message, tStamp=datetime.datetime.now())
+                frogsiren.models.db.session.add(queue)
+            frogsiren.models.db.session.add(contract)
         else:
             # Oh dear, something should go here
-            contract = Contract.query.filter_by(contractID=contractID).first()
+            contract = frogsiren.models.Contract.query.filter_by(contractID=contractID).first()
             if contract.status != status:
-                print "Updating record!"
+                print("Updating record!")
                 contract.assigneeID = assigneeID
                 contract.acceptorID = acceptorID
                 contract.status = status
@@ -154,11 +153,12 @@ def retrieve_contracts():
                 contract.cached = cached_time
             else:
                 continue
-    db.session.commit()
+    frogsiren.models.db.session.commit()
 
     check_stations(False)
     if i > 0:
         check_players()
+
 
 def read_contracts():
     total_volume = 0
@@ -173,7 +173,7 @@ def read_contracts():
     reward_title = ""
     collat_title = ""
 
-    contracts = db.engine.execute(
+    contracts = frogsiren.models.db.engine.execute(
         "SELECT c.contractID, p.characterName AS issuer, c.issuerID, s.stationName AS startStation, s.systemID AS startSystemID, c.startStationID, e.stationName AS endStation, c.endStationId, c.status, c.title, c.dateIssued, c.dateCompleted, c.reward, c.collateral, c.volume, r.cost AS fee FROM contract AS c LEFT JOIN stations AS s on c.startStationID = s.stationID LEFT JOIN stations AS e ON c.endStationId = e.stationID LEFT JOIN  routes AS r ON ((c.startStationID = r.start_station OR c.endStationId = r.start_station) AND (c.endStationID = r.end_station OR c.startStationID = r.end_station ) ) LEFT JOIN player AS p ON c.issuerID = p.characterID WHERE c.type = 'Courier' ORDER BY dateIssued DESC LIMIT 45").fetchall()
 
     for contract in contracts:
@@ -254,9 +254,9 @@ def read_contracts():
         content += '    <td>' + contract.title + '</td>\n'
         content += '    <td>' + contract.dateIssued + '</td>\n'
         if contract.issuer:
-            #TODO Correct logic here and set up escape sequence
+            # TODO Correct logic here and set up escape sequence
             query = 'SELECT p.characterName, SUM(c.reward) AS reward, SUM(c.collateral) AS collat, SUM(c.volume) AS volume, COUNT(*) AS total FROM contract AS c LEFT JOIN player AS p ON c.issuerID == p.characterID WHERE c.type == "Courier" AND p.characterName LIKE "' + contract.issuer + '%" GROUP BY c.issuerID LIMIT 1'
-            players = db.engine.execute(query)
+            players = frogsiren.models.db.engine.execute(query)
 
             for player in players:
                 title = "For player: " + player.characterName + "&#013;"
@@ -264,12 +264,13 @@ def read_contracts():
                 title += "Total Collat: " + humanize.intcomma(player.collat) + "&#013;"
                 title += "Total Volume: " + humanize.intcomma(player.volume) + "&#013;"
                 title += "Courier Contracts: " + str(player.total)
-            note = db.session.query(PlayerNotes).filter(PlayerNotes.characterID==contract.issuerID).first()
+            note = frogsiren.models.db.session.query(frogsiren.models.PlayerNotes).filter(frogsiren.models.PlayerNotes.characterID == contract.issuerID).first()
             if note:
                 noteVal = "*"
             else:
                 noteVal = ""
-            content += '    <td title="' + title + '"><a href="player/'+ str(contract.issuerID) +'">' + contract.issuer + noteVal + '</a></td>\n'
+            content += '    <td title="' + title + '"><a href="player/' + str(
+                contract.issuerID) + '">' + contract.issuer + noteVal + '</a></td>\n'
         else:
             content += '    <td>Issuer unknown!</td>\n'
         content += '    <td>' + contract.status + '</td>\n'
@@ -296,7 +297,7 @@ def read_contracts():
 
 @app.route('/api/pending')
 def api_inprogress():
-    contracts = db.engine.execute(
+    contracts = frogsiren.models.db.engine.execute(
         "SELECT c.contractID, s.stationName AS startStation, s.systemID AS startSystemID, c.startStationID, e.stationName AS endStation, c.endStationId, c.status, c.title, c.dateIssued, c.dateCompleted, c.reward, c.collateral, c.volume, r.cost AS fee FROM contract AS c LEFT JOIN stations AS s on c.startStationID = s.stationID LEFT JOIN stations AS e ON c.endStationId = e.stationID LEFT JOIN  routes AS r ON (c.startStationID = r.start_station AND c.endStationID = r.end_station) WHERE c.type = 'Courier' AND (c.status = 'InProgess' OR c.status = 'Pending')  ORDER BY dateIssued DESC ").fetchall()
 
 
@@ -307,11 +308,11 @@ def display_queue():
     if request.method == 'POST':
         # Time to do some deleting
         statement = "DELETE FROM queue"
-        db.engine.execute(statement)
+        frogsiren.models.db.engine.execute(statement)
 
     # Let's build the statement
     statement = "SELECT note, tStamp FROM queue"
-    tables = db.engine.execute(statement)
+    tables = frogsiren.models.db.engine.execute(statement)
 
     for result in tables:
         note += [{"note": result.note,
@@ -325,25 +326,26 @@ def display_queue():
 @app.route('/report')
 def display_report():
     # SELECT COUNT(*), SUM(reward), SUM(reward) / COUNT(*) AS avg_reward, DATE(dateCompleted) FROM contract WHERE type = 'Courier' AND status = 'Completed' GROUP BY DATE(dateCompleted)
-    #SELECT AVG((strftime('%s', dateCompleted) - strftime('%s',dateIssued)) / 60 / 60) AS avg_time, MAX((strftime('%s', dateCompleted) - strftime('%s',dateIssued)) / 60 / 60 )  FROM contract WHERE type = 'Courier' AND status = 'Completed'
+    # SELECT AVG((strftime('%s', dateCompleted) - strftime('%s',dateIssued)) / 60 / 60) AS avg_time, MAX((strftime('%s', dateCompleted) - strftime('%s',dateIssued)) / 60 / 60 )  FROM contract WHERE type = 'Courier' AND status = 'Completed'
     return render_template('reports.html')
 
 
 @app.route('/stations')
-def check_stations(cleanStations = True):
+def check_stations(cleanStations=True):
     # Stub for nightly cleanup of stations list
     if cleanStations == True:
-        print "Truncating table"
-    endStations = db.session.query(Contract).outerjoin(Stations, Contract.endStationID == Stations.stationID).filter(
-        Stations.stationName == None).filter(Contract.type == 'Courier').order_by(Contract.endStationID).group_by(Contract.endStationID).all()
+        print("Truncating table")
+    endStations = frogsiren.models.db.session.query(frogsiren.models.Contract).outerjoin(frogsiren.models.Stations, frogsiren.models.Contract.endStationID == frogsiren.models.Stations.stationID).filter(
+        frogsiren.models.Stations.stationName == None).filter(frogsiren.models.Contract.type == 'Courier').order_by(frogsiren.models.Contract.endStationID).group_by(
+        frogsiren.models.Contract.endStationID).all()
 
     for endStation in endStations:
         url = localAPI + "/stationID/" + str(endStation.endStationID)
         try:
             j = urllib2.urlopen(url)
-        except urllib2.URLError, e:
+        except urllib2.URLError as e:
             if e.code == 404:
-                print "No stations found!"
+                print("No stations found!")
             else:
                 message = "Unknown error!"
         else:
@@ -351,22 +353,25 @@ def check_stations(cleanStations = True):
 
             system = j_obj['solarSystem']
             for item in system:
-                print item['stationID'], item['stationName'],item['solarSystemID']
-                station = Stations(stationID=int(item['stationID']), stationName=item['stationName'], systemID=int(item['solarSystemID']))
-                print "Adding " + item['stationName']
-                db.session.add(station)
+                print(item['stationID'], item['stationName'], item['solarSystemID'])
+                station = frogsiren.models.Stations(stationID=int(item['stationID']), stationName=item['stationName'],
+                                   systemID=int(item['solarSystemID']))
+                print("Adding " + item['stationName'])
+                frogsiren.models.db.session.add(station)
 
-    db.session.commit()
-    startStations = db.session.query(Contract).outerjoin(Stations, Contract.startStationID == Stations.stationID).filter(
-        Stations.stationName == None).filter(Contract.type == 'Courier').order_by(Contract.startStationID).group_by(Contract.startStationID).all()
+    frogsiren.models.db.session.commit()
+    startStations = frogsiren.models.db.session.query(frogsiren.models.Contract).outerjoin(frogsiren.models.Stations,
+                                                         frogsiren.models.Contract.startStationID == frogsiren.models.Stations.stationID).filter(
+        frogsiren.models.Stations.stationName == None).filter(frogsiren.models.Contract.type == 'Courier').order_by(frogsiren.models.Contract.startStationID).group_by(
+        frogsiren.models.Contract.startStationID).all()
 
     for startStation in startStations:
         url = localAPI + "/stationID/" + str(startStation.startStationID)
         try:
             j = urllib2.urlopen(url)
-        except urllib2.URLError, e:
+        except urllib2.URLError as e:
             if e.code == 404:
-                print "No stations found!"
+                print("No stations found!")
             else:
                 message = "Unknown error!"
         else:
@@ -374,25 +379,25 @@ def check_stations(cleanStations = True):
 
             system = j_obj['solarSystem']
             for item in system:
-                station = Stations(stationID=int(item['stationID']), stationName=item['stationName'], systemID=int(item['solarSystemID']))
-                print "Adding " + item['stationName']
-                db.session.add(station)
+                station = frogsiren.models.Stations(stationID=int(item['stationID']), stationName=item['stationName'],
+                                   systemID=int(item['solarSystemID']))
+                print("Adding " + item['stationName'])
+                frogsiren.models.db.session.add(station)
 
-
-    db.session.commit()
+    frogsiren.models.db.session.commit()
     return "Hi"
 
 
 @app.route('/players')
 def check_players():
-    players = db.session.query(Contract).outerjoin(Player, Contract.issuerID == Player.characterID).filter(
-        Player.characterName == None).order_by(Contract.issuerID).group_by(Contract.issuerID).all()
+    players = frogsiren.models.db.session.query(frogsiren.models.Contract).outerjoin(frogsiren.models.Player, frogsiren.models.Contract.issuerID == frogsiren.models.Player.characterID).filter(
+        frogsiren.models.Player.characterName == None).order_by(frogsiren.models.Contract.issuerID).group_by(frogsiren.models.Contract.issuerID).all()
     i = 0
     ids = "93746362"
     for player in players:
         i += 1
         if i >= 200:
-            print "Hit player cap"
+            print("Hit player cap")
             break
         ids += "," + str(player.issuerID)
     if i > 0:
@@ -401,7 +406,7 @@ def check_players():
         try:
             f = urllib2.urlopen(request_api)
         except:
-            print url
+            print(url)
             return "Error retrieving character ids url"
         player_tree = ET.parse(f)
         player_root = player_tree.getroot()
@@ -420,33 +425,39 @@ def check_players():
             if not allianceName:
                 allianceName = ""
                 allianceID = 0
-            print characterName
-            player = Player(characterName=characterName,characterID=characterID,corporationName=corporationName,corporationID=corporationID,allianceName=allianceName,allianceID=allianceID,dateAdded=current_time,dateUpdated=current_time)
-            db.session.add(player)
+            print(characterName)
+            player = frogsiren.models.Player(characterName=characterName, characterID=characterID, corporationName=corporationName,
+                            corporationID=corporationID, allianceName=allianceName, allianceID=allianceID,
+                            dateAdded=current_time, dateUpdated=current_time)
+            frogsiren.models.db.session.add(player)
 
-    db.session.commit()
+    frogsiren.models.db.session.commit()
     return "Oh my!"
 
-@app.route('/player/<int:id>', methods=['GET','POST'])
+
+@app.route('/player/<int:id>', methods=['GET', 'POST'])
 def display_player(id):
     if 'email' not in session:
         return redirect(url_for('default_display'))
-    player = db.session.query(Player).filter( Player.characterID == id).first()
+    player = frogsiren.models.db.session.query(frogsiren.models.Player).filter(frogsiren.models.Player.characterID == id).first()
     if player:
         noteForm = NoteForm()
         if request.method == "POST":
-            note = PlayerNotes(characterID=player.characterID,note=noteForm.note.data,addedBy=session['email'],dateAdded=cached_time,status=1)
-            db.session.add(note)
-            db.session.commit()
+            note = frogsiren.models.PlayerNotes(characterID=player.characterID, note=noteForm.note.data, addedBy=session['email'],
+                               dateAdded=cached_time, status=1)
+            frogsiren.models.db.session.add(note)
+            frogsiren.models.db.session.commit()
         # Build up notes list
-        notes = db.session.query(PlayerNotes).filter(PlayerNotes.characterID==id).all()
+        notes = frogsiren.models.db.session.query(frogsiren.models.PlayerNotes).filter(frogsiren.models.PlayerNotes.characterID == id).all()
         # Build summary
-        sql = "SELECT characterName, SUM(reward) AS reward, SUM(collateral) AS collateral, SUM(volume) AS volume, COUNT(*) AS count FROM contract LEFT JOIN player ON contract.issuerID = player.characterID WHERE issuerID = " + str(id) + " GROUP BY issuerID"
-        summary = db.session.execute(sql).first()
+        sql = "SELECT characterName, SUM(reward) AS reward, SUM(collateral) AS collateral, SUM(volume) AS volume, COUNT(*) AS count FROM contract LEFT JOIN player ON contract.issuerID = player.characterID WHERE issuerID = " + str(
+            id) + " GROUP BY issuerID"
+        summary = frogsiren.models.db.session.execute(sql).first()
 
         # Build contract table
-        sql = "SELECT ss.stationName as startStation, es.stationName as endStation, reward, collateral, volume, dateIssued, dateCompleted, status FROM contract LEFT JOIN stations ss ON contract.startStationID = ss.stationID LEFT JOIN stations es ON contract.endStationID = es.stationID WHERE issuerID = " + str(id) + " ORDER BY dateIssued"
-        contracts = db.engine.execute(sql).fetchall()
+        sql = "SELECT ss.stationName as startStation, es.stationName as endStation, reward, collateral, volume, dateIssued, dateCompleted, status FROM contract LEFT JOIN stations ss ON contract.startStationID = ss.stationID LEFT JOIN stations es ON contract.endStationID = es.stationID WHERE issuerID = " + str(
+            id) + " ORDER BY dateIssued"
+        contracts = frogsiren.models.db.engine.execute(sql).fetchall()
 
         statement = ""
         for contract in contracts:
@@ -461,9 +472,11 @@ def display_player(id):
             statement += "  <td>" + contract.status + "</td>\n"
             statement += "</tr>\n"
 
-        return render_template('player.html', player_data=player, notes=notes, noteForm=noteForm, contracts=Markup(statement), summary=summary)
+        return render_template('player.html', player_data=player, notes=notes, noteForm=noteForm,
+                               contracts=Markup(statement), summary=summary)
     else:
         return render_template('player.html')
+
 
 @app.route('/contracts')
 def hello_world():
@@ -474,13 +487,13 @@ def hello_world():
             return redirect(url_for('default_display'))
 
     sql = "SELECT COUNT(*) AS total, status FROM contract WHERE type = 'Courier' GROUP BY status ORDER BY status"
-    statuses = db.engine.execute(sql).fetchall()
+    statuses = frogsiren.models.db.engine.execute(sql).fetchall()
     content = 'Contract Totals<br />\n<table>\n<tr>'
     for status in statuses:
         content += '<td width="75">' + status.status + '</td><td width="25" style="text-align: center"><b>' + str(
             status.total) + '</b></td>\n'
     sql = "SELECT SUM(reward) AS reward, SUM(collateral) AS collat, SUM(volume) AS volume FROM contract WHERE type = 'Courier' AND status = 'Completed'"
-    totals = db.engine.execute(sql).first()
+    totals = frogsiren.models.db.engine.execute(sql).first()
 
     content += ""
     content += '</tr>\n</table>\n'
@@ -495,18 +508,18 @@ def default_display():
     running_average = ""
     overall_average = ""
 
-    routes = db.engine.execute(
+    routes = frogsiren.models.db.engine.execute(
         "SELECT s.stationName as start, e.stationName as end, r.cost as cost FROM routes AS r JOIN stations AS s on s.stationID=r.start_station JOIN stations AS e on e.stationID = r.end_station WHERE status = 1")
     for route in routes:
         route_info += "<tr><td>" + route.start + "</td><td><=></td><td>" + route.end + "</td><td>=</td><td>" + str(
             route.cost) + "</td></tr>\n"
 
-    running_sql = db.engine.execute(
+    running_sql = frogsiren.models.db.engine.execute(
         "SELECT AVG((strftime('%s', dateCompleted) - strftime('%s',dateIssued)) / 60 / 60) AS return_value FROM contract WHERE type = 'Courier' AND dateCompleted BETWEEN DATETIME('now', '-5 days') AND DATETIME('now', 'localtime') AND status IS NOT 'Rejected'")
     if running_sql:
         for result in running_sql:
             running_average = "%.2f" % result.return_value
-    overall_sql = db.engine.execute(
+    overall_sql = frogsiren.models.db.engine.execute(
         "SELECT AVG((strftime('%s', dateCompleted) - strftime('%s',dateIssued)) / 60 / 60) AS return_value FROM contract WHERE type = 'Courier' AND status IS NOT 'Rejected'")
     for oresult in overall_sql:
         overall_average = "%.2f" % oresult.return_value
@@ -537,7 +550,7 @@ def signin():
 @app.route('/delete/route/<id>', methods=['GET', 'POST'])
 def del_route(id):
     statement = "DELETE FROM routes WHERE route_id = " + id
-    db.engine.execute(statement)
+    frogsiren.models.db.engine.execute(statement)
     return "Deleted"
 
 
@@ -551,24 +564,24 @@ def routes():
     rform = RoutesForm()
     sform = StationForm()
 
-    #TODO FIX MESSAGING HERE!
+    # TODO FIX MESSAGING HERE!
     if request.method == 'POST':
         if request.form['submit'] == 'Add A Station':
             #Adding a station, station things go here
-            station = Stations(stationID=sform.station_id.data, stationName=sform.station_name.data,
+            station = frogsiren.models.Stations(stationID=sform.station_id.data, stationName=sform.station_name.data,
                                systemID=sform.system_id.data)
-            db.session.add(station)
-            db.session.commit()
-            print "Adding a station id " + sform.station_id.data
+            frogsiren.models.db.session.add(station)
+            frogsiren.models.db.session.commit()
+            print("Adding a station id " + sform.station_id.data)
         elif request.form['submit'] == 'Add Route':
-            route = Routes(start_station=rform.start_station_id.data, end_station=rform.end_station_id.data,
+            route = frogsiren.models.Routes(start_station=rform.start_station_id.data, end_station=rform.end_station_id.data,
                            cost=rform.cost.data, status=1)
-            db.session.add(route)
-            db.session.commit()
-            print "Adding a route"
+            frogsiren.models.db.session.add(route)
+            frogsiren.models.db.session.commit()
+            print("Adding a route")
 
     # Filling out route information
-    routes = db.engine.execute(
+    routes = frogsiren.models.db.engine.execute(
         "SELECT r.route_id as id, s.stationName as start, e.stationName as end, r.cost as cost, r.status as status FROM routes AS r JOIN stations AS s on s.stationID=r.start_station JOIN stations AS e on e.stationID = r.end_station WHERE status = 1 ORDER BY s.stationName, e.stationName")
     #routes = Routes.query.all()
     for route in routes:
@@ -582,7 +595,7 @@ def routes():
             route.id) + "'><img src='/static/img/disable.png' alt=\"Disable\"></a> <a href='/delete/route/" + str(
             route.id) + "'><img src='/static/img/remove.png' alt=\"Remove\"></a></td></tr>\n"
 
-    stations = Stations.query.all()
+    stations = frogsiren.models.Stations.query.all()
 
     for station in stations:
         station_content += "<tr><td> " + station.stationName + "</td><td>" + str(station.stationID) + "</td><td>" + str(
