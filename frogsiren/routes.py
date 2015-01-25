@@ -290,6 +290,46 @@ def read_contracts():
 
     return content
 
+# Only show non-completed/non-deleted/non-failed contracts
+@app.route('/api/contracts')
+def api_contracts():
+    note = []
+    # Let's build the statement
+    statement = "SELECT c.contractID, c.reward, c.collateral, c.dateIssued, p.characterName, c.volume, c.title, " \
+                "c.startStationID AS startID, s.stationName AS startStation, e.stationName AS endStation, " \
+                "e.stationID AS endID, c.status " \
+                "FROM contract AS c " \
+                "LEFT JOIN player AS p ON c.issuerID = p.characterID " \
+                "LEFT JOIN stations AS s ON c.startStationID = s.stationID " \
+                "LEFT JOIN stations AS e on c.endStationID = e.stationID " \
+                "WHERE type == 'Courier' AND status IN ('InProgress', 'Outstanding') ORDER BY dateIssued"
+    tables = db.engine.execute(statement)
+
+    for result in tables:
+        note += [{
+                    "contract": result.contractID,
+                    "reward": result.reward,
+                    "collateral": result.collateral,
+                    "dateIssued": result.dateIssued,
+                    "issuer": result.characterName,
+                    "volume": result.volume,
+                    "iskm3": float(result.reward / result.volume),
+                    "title": result.title,
+                    "startID": result.startID,
+                    "status": result.status,
+                    "startName": result.startStation,
+                    "endID": result.endID,
+                    "endName": result.endStation
+
+         }]
+    pprint(note)
+    if len(note) == 0:
+        abort(404)
+    return jsonify({'messages': note})
+
+@app.route('/api/contracts/<int:id>')
+def api_contractview(id):
+    pass
 
 @app.route('/api/pending')
 def api_inprogress():
