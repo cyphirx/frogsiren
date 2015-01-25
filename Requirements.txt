@@ -1,10 +1,11 @@
+urllib3
 Flask==0.10.1
 Flask-SQLAlchemy==1.0
 Flask-WTF==0.9.4
 Jinja2==2.7.1
 SQLAlchemy==0.8.4
 WTForms==1.0.5
-humanize==0.5
+humanize
 Werkzeug==0.9.4
 httplib2==0.8
 simplejson==3.3.0
