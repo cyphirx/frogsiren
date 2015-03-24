@@ -33,7 +33,7 @@ Config.read("settings.ini")
 cached_time = ""
 
 # Minimum required for reward, should be settable variable in-app
-rewardMin = 10000000
+rewardMin = 0
 
 initial_db()
 
@@ -174,7 +174,7 @@ def read_contracts():
     collat_title = ""
 
     contracts = db.engine.execute(
-        "SELECT c.contractID, p.characterName AS issuer, c.issuerID, s.stationName AS startStation, s.systemID AS startSystemID, c.startStationID, e.stationName AS endStation, c.endStationId, c.status, c.title, c.dateIssued, c.dateCompleted, c.reward, c.collateral, c.volume, r.cost AS fee FROM contract AS c LEFT JOIN stations AS s on c.startStationID = s.stationID LEFT JOIN stations AS e ON c.endStationId = e.stationID LEFT JOIN  routes AS r ON ((c.startStationID = r.start_station OR c.endStationId = r.start_station) AND (c.endStationID = r.end_station OR c.startStationID = r.end_station ) ) LEFT JOIN player AS p ON c.issuerID = p.characterID WHERE c.type = 'Courier' ORDER BY dateIssued DESC LIMIT 45").fetchall()
+        "SELECT c.contractID, p.characterName AS issuer, c.issuerID, s.stationName AS startStation, s.systemID AS startSystemID, c.startStationID, e.stationName AS endStation, c.endStationId, c.status, c.title, c.dateIssued, c.dateCompleted, c.reward, c.collateral, c.volume, r.cost AS fee FROM contract AS c LEFT JOIN stations AS s on c.startStationID = s.stationID LEFT JOIN stations AS e ON c.endStationId = e.stationID LEFT JOIN  routes AS r ON ((c.startStationID = r.start_station OR c.endStationId = r.start_station) AND (c.endStationID = r.end_station OR c.startStationID = r.end_station ) ) LEFT JOIN player AS p ON c.issuerID = p.characterID WHERE c.type = 'Courier' AND c.status IN ('Outstanding', 'InProgress') ORDER BY dateIssued DESC").fetchall()
 
     for contract in contracts:
 
